@@ -8,7 +8,7 @@ traditional piano roll or tracker interface.
 
 OCTMM aims to provide the user with total control, while still providing
 enough utility functions to allow a user to sequence songs with
-little effort. In order to succeed at both goals, OCTMM provides:
+little effort. In order to succeed at both goals, OCTMM should provide:
 
 - Low-level methods for creating new synthesizers through
 digital signal processing functions.
