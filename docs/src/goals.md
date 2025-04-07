@@ -10,5 +10,6 @@
 ### Secondary Goals
 
 - [ ] Sample slicing functionality
+- [ ] CLI utility tools for slicing samples, applying effects, etc
 - [ ] Synthesizer waveform caching
-- [ ] More multithreading?
+- [ ] Use ALL THE CORES
