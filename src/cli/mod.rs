@@ -23,7 +23,7 @@ pub struct CreateArgs {
     /// Name of the project to create
     pub name: String,
 
-    /// Path where the project directory should be created
+    /// Path to the directory in which the project should be created
     pub path: Option<PathBuf>,
 }
 
