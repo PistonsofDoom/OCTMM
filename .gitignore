@@ -19,3 +19,8 @@ target/
 
 # MDBOOK
 docs/book/
+
+
+# Added by cargo
+
+/target
