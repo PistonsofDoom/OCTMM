@@ -2,8 +2,7 @@
 ## Create
 `UNIMPLEMENTED`
 
-Creates a project directory & project files within the current 
-working directory.
+Creates an empty audio project 
 
 ### Args
 - Name: Name of the project, can only use the characters:
