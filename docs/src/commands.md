@@ -10,6 +10,8 @@ working directory.
   - a-Z
   - 0-9
   - `-` and `_`
+- Path (opt): Specifies what directory the project should be created in
+  - Default: Current working directory
 
 
 ## Play
