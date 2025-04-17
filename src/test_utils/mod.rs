@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-/// Removes the directory `OCTMM/tmp/`, 
+/// Removes the directory `OCTMM/tmp/`,
 /// including the contents. Returns
 /// Some(PathBuf) on success, and None
 /// on failure
@@ -15,8 +15,7 @@ pub fn get_test_dir() -> Option<PathBuf> {
 
     if current_dir.exists() {
         Some(current_dir)
-    }
-    else {
+    } else {
         None
     }
 }
