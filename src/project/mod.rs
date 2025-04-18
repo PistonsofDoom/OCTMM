@@ -42,7 +42,10 @@ impl Project {
     /// specified name
     pub fn new(path: &PathBuf, name: &String) -> Result<(), ProjectError> {
         // Sanity check name
-        if !name.chars().all(char::is_alphanumeric) {
+        if !name
+            .chars()
+            .all(|x| x.is_alphanumeric() || x == '_' || x == '-')
+        {
             return Err(ProjectError::BadName(name.clone()));
         }
 
@@ -154,7 +157,20 @@ mod tests {
         program_dir.push(FILE_PROGRAM);
         assert!(program_dir.exists());
 
+        // Should also be created
+        name = "project-success".to_string();
+        test = Project::new(&tmp, &name);
+        assert_eq!(test.is_ok(), true);
+
+        name = "project_success".to_string();
+        test = Project::new(&tmp, &name);
+        assert_eq!(test.is_ok(), true);
+
         // Shouldn't be created
+        name = "project fail".to_string();
+        test = Project::new(&tmp, &name);
+        assert_eq!(test.is_ok(), false);
+
         name = "project$fail".to_string();
         test = Project::new(&tmp, &name);
         assert_eq!(test.is_ok(), false);
