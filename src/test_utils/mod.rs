@@ -37,14 +37,13 @@ fn get_test_dir(sub_folder: &str) -> Option<PathBuf> {
 /// Some(PathBuf) on success, and None
 /// on failure
 pub fn make_test_dir(sub_folder: &str) -> Option<PathBuf> {
-
     let current_dir = get_test_dir(sub_folder);
 
     if current_dir.is_none() {
         return None;
     }
     let current_dir = current_dir.unwrap();
-    
+
     let _ = fs::remove_dir_all(&current_dir);
     fs::create_dir_all(&current_dir).ok()?;
 
@@ -57,13 +56,12 @@ pub fn make_test_dir(sub_folder: &str) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
+    use super::get_test_dir;
     use std::env;
     use std::path::PathBuf;
-    use super::get_test_dir;
 
     #[test]
-    fn test_get_test_dir()
-    {
+    fn test_get_test_dir() {
         // Valid
         assert!(get_test_dir("abc123").is_some());
         assert!(get_test_dir("abc_123").is_some());

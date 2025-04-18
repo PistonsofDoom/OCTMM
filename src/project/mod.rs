@@ -41,14 +41,13 @@ impl Project {
         }
 
         project_path.push(name);
-        // Create directory
+        // Create directories
         let create_result = fs::create_dir(&project_path);
 
         if create_result.is_err() {
             return Err(ProjectError::BadPath);
         }
 
-        // Add directories
         let mut module_path = project_path.clone();
         module_path.push(DIR_MODULES);
 
@@ -88,13 +87,11 @@ impl Project {
             return Err(ProjectError::NoProgram);
         }
 
-        let project = Project {
+        Ok(Project {
             name: file_name.unwrap().to_string(),
             path: path.clone(),
             program: program_contents.unwrap(),
-        };
-
-        Ok(project)
+        })
     }
 
     pub fn get_name(&self) -> &String {
@@ -112,8 +109,8 @@ impl Project {
 
 #[cfg(test)]
 mod tests {
-    use crate::{project::Project, project::ProjectResult, test_utils::make_test_dir};
     use super::{DIR_MODULES, FILE_PROGRAM};
+    use crate::{project::Project, project::ProjectResult, test_utils::make_test_dir};
     use std::env;
     use std::path::PathBuf;
 
