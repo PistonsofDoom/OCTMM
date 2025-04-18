@@ -5,6 +5,7 @@ use std::path::PathBuf;
 /// Gets the test directory for a given sub_folder
 /// If the sub_folder tries to change its parent, it will
 /// return None. Otherwise, returns Some(PathBuf)
+#[allow(dead_code)]
 fn get_test_dir(sub_folder: &str) -> Option<PathBuf> {
     let mut current_dir = env::current_dir().unwrap();
     current_dir.push("tmp");
@@ -41,6 +42,7 @@ fn get_test_dir(sub_folder: &str) -> Option<PathBuf> {
 /// including the contents. Returns
 /// Some(PathBuf) on success, and None
 /// on failure
+#[allow(dead_code)]
 pub fn make_test_dir(sub_folder: &str) -> Option<PathBuf> {
     let current_dir = get_test_dir(sub_folder)?;
 
