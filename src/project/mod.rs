@@ -18,7 +18,7 @@ impl ProjectError {
     pub fn to_string(&self) -> String {
         match &self {
             ProjectError::BadName(name) => format!("Bad name provided \"{}\"", name),
-            ProjectError::BadPath(path) => format!("Failed to use path \"{:?}\"", path),
+            ProjectError::BadPath(path) => format!("Failed to use path {:?}", path),
             ProjectError::BadTemplate => format!("Error occured while creating template"),
             ProjectError::NoProgram => format!("Missing program.luau"),
         }
