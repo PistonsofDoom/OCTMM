@@ -2,23 +2,28 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+/// Gets the test directory for a given sub_folder
+/// If the sub_folder tries to change its parent, it will
+/// return None. Otherwise, returns Some(PathBuf)
 fn get_test_dir(sub_folder: &str) -> Option<PathBuf> {
     let mut current_dir = env::current_dir().unwrap();
     current_dir.push("tmp");
 
-    // Add sub_folder
+    // Get tmp directory
     let tmp_dir = current_dir.clone();
-
-    current_dir.push(sub_folder);
-    let parent_dir = current_dir.parent();
-
-    // Make sure we didn't somehow accidentally navigate to root
-    if parent_dir.is_none() {
-        return None;
-    }
 
     // Make sure our tmp_dir actually exists
     if tmp_dir.to_str().is_none() {
+        return None;
+    }
+
+    // Push sub folder
+    current_dir.push(sub_folder);
+
+    // Get parent to sanity check against tmp_dir
+    let parent_dir = current_dir.parent();
+    // Make sure we didn't somehow accidentally navigate to root
+    if parent_dir.is_none() {
         return None;
     }
 
@@ -37,12 +42,7 @@ fn get_test_dir(sub_folder: &str) -> Option<PathBuf> {
 /// Some(PathBuf) on success, and None
 /// on failure
 pub fn make_test_dir(sub_folder: &str) -> Option<PathBuf> {
-    let current_dir = get_test_dir(sub_folder);
-
-    if current_dir.is_none() {
-        return None;
-    }
-    let current_dir = current_dir.unwrap();
+    let current_dir = get_test_dir(sub_folder)?;
 
     let _ = fs::remove_dir_all(&current_dir);
     fs::create_dir_all(&current_dir).ok()?;
