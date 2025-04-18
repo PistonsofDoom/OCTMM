@@ -25,29 +25,30 @@ pub struct Project {
     program: String,
 }
 
+#[allow(dead_code)]
 impl Project {
     /// Creates a new project at a specified file directory with the
     /// specified name
     pub fn new(path: &PathBuf, name: &String) -> Result<(), ProjectError> {
+        // Sanity check name
         if !name.chars().all(char::is_alphanumeric) {
             return Err(ProjectError::BadName);
         }
 
         let mut project_path = path.clone();
-
         // Sanity check path
         if !project_path.exists() {
             return Err(ProjectError::BadPath);
         }
 
         project_path.push(name);
-        // Create directories
-        let create_result = fs::create_dir(&project_path);
 
-        if create_result.is_err() {
+        // Create project directory
+        if fs::create_dir(&project_path).is_err() {
             return Err(ProjectError::BadPath);
         }
 
+        // Create sub-directories
         let mut module_path = project_path.clone();
         module_path.push(DIR_MODULES);
 
@@ -55,9 +56,10 @@ impl Project {
             return Err(ProjectError::BadTemplate);
         }
 
-        // Add files
+        // Create files
         let mut program_path = project_path.clone();
         program_path.push(FILE_PROGRAM);
+
         let mut program = File::create(&program_path);
 
         if program.is_err() {
