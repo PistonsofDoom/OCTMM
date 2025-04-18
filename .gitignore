@@ -25,3 +25,6 @@ docs/book/
 
 # VIM
 *.swp
+
+# TESTS
+/tmp
