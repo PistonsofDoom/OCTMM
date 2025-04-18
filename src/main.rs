@@ -32,7 +32,7 @@ fn main() {
 
             if result.is_err() {
                 println!(
-                    "Creating project failed with an error:\n{}",
+                    "Creating project failed with an error:\n  {}",
                     result.unwrap_err().to_string()
                 );
             }
