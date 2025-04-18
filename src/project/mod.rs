@@ -8,10 +8,21 @@ const FILE_PROGRAM: &str = "program.luau";
 
 #[derive(Debug)]
 pub enum ProjectError {
-    BadName,
-    BadPath,
+    BadName(String),
+    BadPath(PathBuf),
     BadTemplate,
     NoProgram,
+}
+
+impl ProjectError {
+    pub fn to_string(&self) -> String {
+        match &self {
+            ProjectError::BadName(name) => format!("Bad name provided \"{}\"", name),
+            ProjectError::BadPath(path) => format!("Failed to use path \"{:?}\"", path),
+            ProjectError::BadTemplate => format!("Error occured while creating template"),
+            ProjectError::NoProgram => format!("Missing program.luau"),
+        }
+    }
 }
 
 pub type ProjectResult = Result<Project, ProjectError>;
@@ -32,20 +43,20 @@ impl Project {
     pub fn new(path: &PathBuf, name: &String) -> Result<(), ProjectError> {
         // Sanity check name
         if !name.chars().all(char::is_alphanumeric) {
-            return Err(ProjectError::BadName);
+            return Err(ProjectError::BadName(name.clone()));
         }
 
         let mut project_path = path.clone();
         // Sanity check path
         if !project_path.exists() {
-            return Err(ProjectError::BadPath);
+            return Err(ProjectError::BadPath(project_path));
         }
 
         project_path.push(name);
 
         // Create project directory
         if fs::create_dir(&project_path).is_err() {
-            return Err(ProjectError::BadPath);
+            return Err(ProjectError::BadPath(project_path));
         }
 
         // Create sub-directories
@@ -53,7 +64,7 @@ impl Project {
         module_path.push(DIR_MODULES);
 
         if fs::create_dir(&module_path).is_err() {
-            return Err(ProjectError::BadTemplate);
+            return Err(ProjectError::BadPath(module_path));
         }
 
         // Create files
@@ -74,11 +85,11 @@ impl Project {
     pub fn load(path: &PathBuf) -> ProjectResult {
         let file_name = path.file_name();
         if file_name.is_none() {
-            return Err(ProjectError::BadPath);
+            return Err(ProjectError::BadName("path.file_name".to_string()));
         }
         let file_name = file_name.unwrap().to_str();
         if file_name.is_none() {
-            return Err(ProjectError::BadPath);
+            return Err(ProjectError::BadName("path.file_name".to_string()));
         }
 
         let mut program_path = path.clone();

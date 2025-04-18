@@ -1,7 +1,7 @@
 use crate::{cli::Cli, cli::Commands, project::Project};
-use std::path::PathBuf;
-use std::env;
 use clap::Parser;
+use std::env;
+use std::path::PathBuf;
 
 mod cli;
 mod project;
@@ -27,11 +27,14 @@ fn main() {
             } else {
                 path = args.path.clone().unwrap();
             }
-       
+
             let result = Project::new(&path, &args.name);
 
             if result.is_err() {
-                println!("ERROR while creating a new project: {:?}", result);
+                println!(
+                    "Creating project failed with an error:\n{}",
+                    result.unwrap_err().to_string()
+                );
             }
         }
         Some(Commands::Play(args)) => {
