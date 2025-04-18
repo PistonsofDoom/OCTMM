@@ -1,5 +1,5 @@
 
-### BEFORE FUNDSP / LIVE AUDIO
+### DURING LUAU INTEGRATION
 - Create template Luau file
   - Update test_project_load to confirm template luau file is created
 
