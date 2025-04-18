@@ -59,8 +59,6 @@ pub fn make_test_dir(sub_folder: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::get_test_dir;
-    use std::env;
-    use std::path::PathBuf;
 
     #[test]
     fn test_get_test_dir() {

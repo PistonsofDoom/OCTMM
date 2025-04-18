@@ -112,9 +112,7 @@ impl Project {
 #[cfg(test)]
 mod tests {
     use super::{DIR_MODULES, FILE_PROGRAM};
-    use crate::{project::Project, project::ProjectResult, test_utils::make_test_dir};
-    use std::env;
-    use std::path::PathBuf;
+    use crate::{project::Project, test_utils::make_test_dir};
 
     #[test]
     fn test_project_new() {
@@ -170,25 +168,22 @@ mod tests {
         assert!(tmp.is_some());
         let tmp = tmp.unwrap();
 
-        let mut test;
-        let mut name: String;
+        let name: String = "winner".to_string();
+        assert_eq!(Project::new(&tmp, &name).is_ok(), true);
 
-        name = "winner".to_string();
-        test = Project::new(&tmp, &name);
-        assert_eq!(test.is_ok(), true);
-
-        // Test
-        let test = Project::load(&tmp);
-        assert_eq!(test.is_err(), true);
-
+        // Test Success
         let mut test_path = tmp.clone();
         test_path.push("winner");
 
         let test = Project::load(&test_path);
         assert_eq!(test.is_ok(), true);
         let test = test.unwrap();
-        assert_eq!(test.get_name(), "winner");
+        assert_eq!(test.get_name(), &name);
         assert_eq!(test.get_path(), &test_path);
         // todo: test program contents when lua template is created
+
+        // Test Failure
+        let test = Project::load(&tmp);
+        assert_eq!(test.is_err(), true);
     }
 }
