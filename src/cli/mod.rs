@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -28,13 +28,13 @@ pub struct CreateArgs {
 }
 
 #[derive(Args)]
-pub struct PlayArgs{
+pub struct PlayArgs {
     /// Path to the project directory
     pub path: Option<PathBuf>,
 }
 
 #[derive(Args)]
-pub struct ExportArgs{
+pub struct ExportArgs {
     /// Path to the project directory
     pub project_path: PathBuf,
     /// Path to the export directory
@@ -42,5 +42,3 @@ pub struct ExportArgs{
     /// Type of file to create
     pub format: Option<String>,
 }
-
-
