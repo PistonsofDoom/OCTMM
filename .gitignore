@@ -16,11 +16,15 @@ target/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Added by cargo
+
+/target
 
 # MDBOOK
 docs/book/
 
+# VIM
+*.swp
 
-# Added by cargo
-
-/target
+# TESTS
+/tmp
