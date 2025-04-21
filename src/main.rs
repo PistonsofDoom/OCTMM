@@ -15,9 +15,7 @@ fn main() {
             let path: PathBuf;
 
             if args.path.is_none() {
-                path = env::current_dir()
-                    .expect("Couldn't get current directory");
-
+                path = env::current_dir().expect("Couldn't get current directory");
             } else {
                 path = args.path.clone().unwrap();
             }
