@@ -14,6 +14,7 @@ pub enum ProjectError {
     NoProgram,
 }
 
+#[allow(dead_code)]
 impl ProjectError {
     pub fn to_string(&self) -> String {
         match &self {

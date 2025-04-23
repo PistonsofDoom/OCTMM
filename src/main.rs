@@ -15,27 +15,12 @@ fn main() {
             let path: PathBuf;
 
             if args.path.is_none() {
-                let current_dir = env::current_dir();
-
-                if current_dir.is_err() {
-                    println!("ERROR: Couldn't get current directory.");
-                    println!("Please specify path manually.");
-                    return;
-                }
-
-                path = current_dir.unwrap();
+                path = env::current_dir().expect("Couldn't get current directory");
             } else {
                 path = args.path.clone().unwrap();
             }
 
-            let result = Project::new(&path, &args.name);
-
-            if result.is_err() {
-                println!(
-                    "Creating project failed with an error:\n  {}",
-                    result.unwrap_err().to_string()
-                );
-            }
+            Project::new(&path, &args.name).expect("Failed to create project");
         }
         Some(Commands::Play(args)) => {
             println!("play: {:?}", args.path);
