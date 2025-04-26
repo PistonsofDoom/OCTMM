@@ -1,10 +1,11 @@
-use crate::{cli::Cli, cli::Commands, project::Project};
+use crate::{cli::Cli, cli::Commands, project::Project, runner::Runner};
 use clap::Parser;
 use std::env;
 use std::path::PathBuf;
 
 mod cli;
 mod project;
+mod runner;
 mod test_utils;
 
 fn main() {
@@ -23,8 +24,19 @@ fn main() {
             Project::new(&path, &args.name).expect("Failed to create project");
         }
         Some(Commands::Play(args)) => {
-            println!("play: {:?}", args.path);
-            println!("unimplemented");
+            let path: PathBuf;
+
+            if args.path.is_none() {
+                path = env::current_dir().expect("Couldn't get current directory");
+            } else {
+                path = args.path.clone().unwrap();
+            }
+
+            let project = Project::load(&path).expect("Couldn't load project");
+
+            let runner = Runner::new(project);
+            
+            runner.run();
         }
         Some(Commands::Export(args)) => {
             println!(
