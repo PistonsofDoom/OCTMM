@@ -1,5 +1,7 @@
-use crate::{project::Project};
+use crate::project::Project;
 use mlua::*;
+
+mod timer;
 
 pub struct Runner {
     lua: Lua,
@@ -14,15 +16,25 @@ impl Runner {
             project: project,
         }
     }
-    
+
+    /// Load a string containing Luau code, then execute it
+    /// Also takes in a 'name', which is only used for the
+    /// error message
+    fn load_program(&self, program: &str, name: &str) {
+        self.lua
+            .load(program)
+            .exec()
+            .expect(format!("Failed to load \"{}\", got\n", name).as_str());
+    }
+
     /// Load the program and run it
     pub fn run(&self) {
         let globals = self.lua.globals();
-        let user_chunk = self.lua.load(self.project.get_program());
 
-        user_chunk.exec();
+        // Internal Modules
+        self.load_program(timer::LUA_MODULE, "internal module timer.luau");
 
-        /*let test: Function = globals.get("test_function").expect("No function");
-        test.call::<()>("Hello from rust");*/
+        // User program
+        self.load_program(self.project.get_program(), "user program");
     }
 }
