@@ -25,9 +25,12 @@ _G.Timer._Callbacks = {};
 --						the delta time between calls
 -- 	)
 -- 
-local function addCallback(callback_name: string, callback_type: string, callback_freq, callback_func: (number))
+local function addCallback(callback_name: string, callback_type: string, callback_freq, callback_func)
 	if _G.Timer._Callbacks[callback_name] ~= nil then
 		error("Callback already exists!")
+	end
+	if typeof(callback_func) ~= "function" then
+		error("Tried to create callback to non-function")
 	end
 
 	_G.Timer._Callbacks[callback_name] = {}
@@ -35,7 +38,6 @@ local function addCallback(callback_name: string, callback_type: string, callbac
 	_G.Timer._Callbacks[callback_name]["freq"] = callback_freq
 	_G.Timer._Callbacks[callback_name]["func"] = callback_func
 end
-
 
 -- Global Functions
 
@@ -48,7 +50,7 @@ end
 --	)
 --
 --	Add a callback function that gets called every 'tick'
-_G.Timer.AddTickCallback = function(callback_name: string, callback_func: (number))
+_G.Timer.AddTickCallback = function(callback_name: string, callback_func)
 	addCallback(callback_name, TIMER_CALLBACK_TICK, nil, callback_func)
 end
 
@@ -67,7 +69,7 @@ end
 --
 --	Add a callback function that gets called at a certain frequency 
 --	per beat
-_G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number, callback_func: (number))
+_G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number, callback_func)
 	if callback_freq <= 0 then
 		error("Tried to AddBeatCallback " + callback_name + " with a frequency below 0")
 	end
