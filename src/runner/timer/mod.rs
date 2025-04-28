@@ -1,8 +1,35 @@
-pub const LUA_MODULE: &str = include_str!("timer.luau");
+use crate::runner::Module;
+use mlua::*;
+
+const LUA_MODULE: &str = include_str!("timer.luau");
 
 pub struct TimerModule {}
 
-impl TimerModule {}
+impl TimerModule {
+    pub fn new() -> TimerModule {
+        TimerModule {}
+    }
+}
+
+impl Module for TimerModule {
+    fn init(&self, lua: &Lua) {
+        println!("Initializing TimerModule");
+    }
+    fn update(&self, time: f64, lua: &Lua) {
+        println!("Updated");
+    }
+    fn end(&self, lua: &Lua) {
+        println!("Ending TimerModule")
+    }
+
+    fn get_program(&self) -> &str {
+        LUA_MODULE
+    }
+
+    fn get_name(&self) -> &str {
+        "timer module"
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -56,9 +83,14 @@ mod tests {
         // Test global now
         let timer: Table = globals.get("Timer").expect("Timer table not found");
         let callbacks: Table = timer.get("_Callbacks").expect("Callback table not found");
-        let user_call: Table = callbacks.get("UserCall").expect("Didn't find user callback");
+        let user_call: Table = callbacks
+            .get("UserCall")
+            .expect("Didn't find user callback");
 
-        assert_eq!(user_call.get::<String>("type").expect("Didn't find type"), "tick");
+        assert_eq!(
+            user_call.get::<String>("type").expect("Didn't find type"),
+            "tick"
+        );
         assert!(user_call.get::<Function>("func").is_ok());
     }
 }
