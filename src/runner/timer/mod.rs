@@ -15,9 +15,7 @@ impl Module for TimerModule {
     fn init(&self, lua: &Lua) {
         println!("Initializing TimerModule");
     }
-    fn update(&self, time: f64, lua: &Lua) {
-        println!("Updated");
-    }
+    fn update(&self, time: &f64, lua: &Lua) {}
     fn end(&self, lua: &Lua) {
         println!("Ending TimerModule")
     }

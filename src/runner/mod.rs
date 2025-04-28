@@ -5,7 +5,7 @@ mod timer;
 
 pub trait Module {
     fn init(&self, lua: &Lua);
-    fn update(&self, time: f64, lua: &Lua);
+    fn update(&self, time: &f64, lua: &Lua);
     fn end(&self, lua: &Lua);
 
     fn get_program(&self) -> &str;
@@ -14,6 +14,7 @@ pub trait Module {
 
 pub struct Runner {
     project: Project,
+    now: std::time::Instant,
     lua: Lua,
     modules: [Box<dyn Module>; 1],
 }
@@ -24,10 +25,9 @@ impl Runner {
         let lua = Lua::new();
         Runner {
             project: project,
+            now: std::time::Instant::now(),
             lua: lua,
-            modules: [
-                Box::new(TimerModule::new()),
-            ],
+            modules: [Box::new(TimerModule::new())],
         }
     }
 
@@ -52,9 +52,18 @@ impl Runner {
         // Load user program
         self.load_program(self.project.get_program(), "user program");
 
-        // Initiate runtime
+        // Initiate program loop
+        // Compensate for long initilizations
+        let start_millis = self.now.elapsed().as_millis();
+
         loop {
-            break;
+            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+
+            for module in &self.modules {
+                module.update(&time_passed, &self.lua);
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
 
         // Call 'end' on all internal modules
