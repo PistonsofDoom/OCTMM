@@ -22,17 +22,26 @@ impl Module for TimerModule {
             .expect("Didn't find 'Timer' table");
 
         let callbacks: Table = timer.get("_Callbacks").expect("Didn't find `Timer._Callbacks`");
+        let bpm: f64 = timer.get("BPM").expect("Invalid BPM");
         
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
             let (key, value) = pair.expect("Invalid callback");
 
-            let call_type: String = value.get("type").expect("Invalid callback type found");
-            let call_func: Function = value.get("func").expect("Invalid callback function found");
+            let call_type: String = value.get("type").expect("Invalid callback type");
+            let call_func: Function = value.get("func").expect("Invalid callback function");
 
             if call_type == "beat" {
-                // beat call
-                panic!("TODO");
+                let call_freq: f64 = value.get("freq").expect("Invalid callback frequency");
+                let call_time: f64 = value.get("time").unwrap_or(0.0);
+
+                // If function should be called
+                if time - call_time >= (60.0 / bpm) / call_freq {
+                    let time = time.clone();
+
+                    value.set("time", time);
+                    call_func.call::<()>(time).expect("Error occured while running beat update");
+                }
             }
             else {
                 let time = time.clone();

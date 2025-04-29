@@ -9,6 +9,7 @@ local TIMER_CALLBACK_BEAT = "beat"
 -- Initialize Globals
 _G.Timer = {};
 _G.Timer._Callbacks = {};
+_G.Timer.BPM = 120;
 
 -- Local utility functions
 
@@ -77,3 +78,14 @@ _G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number
 end
 
 
+-- TODO:
+--[[
+--
+-- add 'TryAddBeatCallback' and 'TryAddTickCallback' (wrap addCallBack wihin a pcall, return result)
+--
+-- 'GetCallback' which returns the callback type
+-- 'GetCallbackType' returns callback type
+-- 'GetCallbackFreq' returns callback freq (if type == 'beat', else error)
+--
+-- 'SetCallbackFreq' sets callback freq (if type == 'beat', else error)
+--]]
