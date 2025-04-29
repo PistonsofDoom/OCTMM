@@ -15,7 +15,31 @@ impl Module for TimerModule {
     fn init(&self, lua: &Lua) {
         println!("Initializing TimerModule");
     }
-    fn update(&self, time: &f64, lua: &Lua) {}
+    fn update(&self, time: &f64, lua: &Lua) {
+        let timer: Table = lua
+            .globals()
+            .get("Timer")
+            .expect("Didn't find 'Timer' table");
+
+        let callbacks: Table = timer.get("_Callbacks").expect("Didn't find `Timer._Callbacks`");
+        
+        // optimization: use Table::for_each
+        for pair in callbacks.pairs::<String, Table>() {
+            let (key, value) = pair.expect("Invalid callback");
+
+            let call_type: String = value.get("type").expect("Invalid callback type found");
+            let call_func: Function = value.get("func").expect("Invalid callback function found");
+
+            if call_type == "beat" {
+                // beat call
+                panic!("TODO");
+            }
+            else {
+                let time = time.clone();
+                call_func.call::<()>(time).expect("Error occured while running tick update");
+            }
+        }
+    }
     fn end(&self, lua: &Lua) {
         println!("Ending TimerModule")
     }
@@ -33,6 +57,11 @@ impl Module for TimerModule {
 mod tests {
     use crate::runner::timer;
     use mlua::*;
+
+    #[test]
+    fn test_rust_module() {
+        panic!("Unimplemented");
+    }
 
     // LUA CODE TESTS
     #[test]
@@ -131,7 +160,6 @@ mod tests {
 
             timer.AddBeatCallback("My Callback", false, test)
         "#;
-
 
         assert!(lua.load(fail_case1).exec().is_err());
         assert!(lua.load(fail_case2).exec().is_err());
