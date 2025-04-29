@@ -53,16 +53,25 @@ impl Runner {
         self.load_program(self.project.get_program(), "user program");
 
         // Initiate program loop
+        let globals = self.lua.globals();
         // Compensate for long initilizations
         let start_millis = self.now.elapsed().as_millis();
 
         loop {
             let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
 
+            // Update all internal modules
             for module in &self.modules {
                 module.update(&time_passed, &self.lua);
             }
 
+            // Check if we should end the song
+            let end_song: bool = globals.get("EndSong").unwrap_or(false);
+            if end_song {
+                break;
+            }
+
+            // Give the CPU a lil snooze, assuming its not already maxed out
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
 
