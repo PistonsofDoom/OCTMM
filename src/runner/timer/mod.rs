@@ -235,8 +235,6 @@ mod tests {
         assert!(lua.load(success_case).exec().is_ok());
 
         // Test global now
-        let timer: Table = globals.get("Timer").expect("Timer table not found");
-
         assert_eq!(
             globals
                 .get::<String>("TestValue_Tick")
@@ -248,6 +246,52 @@ mod tests {
                 .get::<String>("TestValue_Beat")
                 .expect("Didn't find type"),
             "beat"
+        );
+        assert!(
+            !globals
+                .contains_key("TestValue_Nil")
+                .expect("Error checking for key")
+        );
+    }
+
+    #[test]
+    fn test_get_callback_freq() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+
+        lua.load(timer::LUA_MODULE)
+            .exec()
+            .expect("Failed to load lua module");
+
+        // Test success case
+        let success_case = r#"
+            local timer = _G.Timer
+
+            local function userCallFunction()
+
+            end
+
+            timer.AddTickCallback("TickCall", userCallFunction)
+            timer.AddBeatCallback("BeatCall", 1.0, userCallFunction)
+
+            _G.TestValue_Tick = timer.GetCallbackFreq("TickCall")
+            _G.TestValue_Beat = timer.GetCallbackFreq("BeatCall")
+            _G.TestValue_Nil = timer.GetCallbackFreq("NilCallback")
+        "#;
+
+        assert!(lua.load(success_case).exec().is_ok());
+
+        // Test global now
+        assert!(
+            !globals
+                .contains_key("TestValue_Tick")
+                .expect("Error checking for key")
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find type"),
+            1.0
         );
         assert!(
             !globals
