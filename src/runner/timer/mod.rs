@@ -69,12 +69,54 @@ impl Module for TimerModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::timer;
+    use crate::runner::{Module, timer, TimerModule};
     use mlua::*;
 
     #[test]
     fn test_rust_module() {
-        panic!("Unimplemented");
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let timer: &dyn Module = &TimerModule::new();
+
+        assert!(lua.load(timer.get_program()).exec().is_ok());
+
+        // Init environment
+        let test_program = r#"
+            local timer = _G.Timer
+
+            _G.TestValue_Tick = 0
+            _G.TestValue_Beat = 0
+
+            local function tick_callback()
+                _G.TestValue_Tick += 1
+            end
+
+            local function beat_callback()
+                _G.TestValue_Beat += 1
+            end
+
+            timer.AddTickCallback("TickCall", tick_callback)
+            timer.AddBeatCallback("BeatCall", 1.0, beat_callback)
+        "#;
+
+        assert!(lua.load(test_program).exec().is_ok());
+        
+        timer.update(&1.2, &lua);
+        timer.update(&1.3, &lua);
+
+        // Test Values
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Tick")
+                .expect("Didn't find freq"),
+            2.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find freq"),
+            1.0
+        );
     }
 
     // LUA CODE TESTS
