@@ -24,7 +24,7 @@ impl Module for TimerModule {
         let callbacks: Table = timer
             .get("_Callbacks")
             .expect("Didn't find `Timer._Callbacks`");
-        let bpm: f64 = timer.get("BPM").expect("Invalid BPM");
+        let bpm: f64 = timer.get("_BPM").expect("Invalid BPM");
 
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
@@ -69,7 +69,7 @@ impl Module for TimerModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{Module, timer, TimerModule};
+    use crate::runner::{Module, TimerModule, timer};
     use mlua::*;
 
     #[test]
@@ -100,7 +100,7 @@ mod tests {
         "#;
 
         assert!(lua.load(test_program).exec().is_ok());
-        
+
         timer.update(&1.2, &lua);
         timer.update(&1.3, &lua);
 
@@ -120,6 +120,51 @@ mod tests {
     }
 
     // LUA CODE TESTS
+
+    #[test]
+    fn test_bpm_utilities() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+
+        lua.load(timer::LUA_MODULE)
+            .exec()
+            .expect("Failed to load lua module");
+
+        // Test failure case
+        let fail_case1 = r#"
+            local timer = _G.Timer
+
+            timer.SetBPM(0)
+        "#;
+        let fail_case2 = r#"
+            local timer = _G.Timer
+
+            timer.SetBPM("1")
+        "#;
+
+        assert!(lua.load(fail_case1).exec().is_err());
+        assert!(lua.load(fail_case2).exec().is_err());
+
+        // Test success case
+        let success_case = r#"
+            local timer = _G.Timer
+
+            timer.SetBPM(321.50)
+
+            _G.TestValue_BPM = timer.GetBPM()
+        "#;
+
+        assert!(lua.load(success_case).exec().is_ok());
+
+        // Test global now
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_BPM")
+                .expect("Didn't find BPM value"),
+            321.50
+        );
+    }
+
     #[test]
     fn test_add_tick_callback() {
         let lua = Lua::new();
@@ -400,14 +445,8 @@ mod tests {
             .get("BeatCall")
             .expect("Didn't find beat callback");
 
-        assert_eq!(
-            user_call.get::<f64>("freq").expect("Didn't find freq"),
-            1.0
-        );
+        assert_eq!(user_call.get::<f64>("freq").expect("Didn't find freq"), 1.0);
         assert!(lua.load(success_case).exec().is_ok());
-        assert_eq!(
-            user_call.get::<f64>("freq").expect("Didn't find freq"),
-            3.0
-        );
+        assert_eq!(user_call.get::<f64>("freq").expect("Didn't find freq"), 3.0);
     }
 }

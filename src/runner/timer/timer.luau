@@ -9,7 +9,7 @@ local TIMER_CALLBACK_BEAT = "beat"
 -- Initialize Globals
 _G.Timer = {};
 _G.Timer._Callbacks = {};
-_G.Timer.BPM = 120;
+_G.Timer._BPM = 120;
 
 -- Local utility functions
 
@@ -41,6 +41,28 @@ local function addCallback(callback_name: string, callback_type: string, callbac
 end
 
 -- Global Functions
+
+-- SetBPM(
+-- 		bpm - [Number] New BPM of the song, has to be > 0, can
+-- 			  be a decimal.
+-- )
+-- 
+-- Set the BPM of the song
+_G.Timer.SetBPM = function(bpm: number)
+	if bpm <= 0 then
+		error("Tried to set a BPM <= 0")
+	end
+
+	_G.Timer._BPM = bpm
+end
+
+-- GetBPM(
+-- ) -> [Number] Current BPM
+--
+-- Returns the current BPM of the song
+_G.Timer.GetBPM = function()
+	return _G.Timer._BPM
+end
 
 --	AddTickCallback(
 --		callback_name - [String] Name of the callback function,
