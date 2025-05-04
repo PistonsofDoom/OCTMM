@@ -77,16 +77,6 @@ _G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number
 	addCallback(callback_name, TIMER_CALLBACK_BEAT, callback_freq, callback_func)
 end
 
--- TODO: implement this
-_G.Timer.TryAddTickCallback = function(callback_name: string, callback_func)
-	error("Not implemented")
-end
-
--- TODO: implement this
-_G.Timer.TryAddBeatCallback = function(callback_name: string, callback_freq: number, callback_func)
-	error("Not implemented")
-end
-
 --  RemoveCallback(
 --  	callback_name - [String] Name of the callback function
 --  					to remove.
@@ -178,8 +168,3 @@ _G.Timer.SetCallbackFreq = function(callback_name: string, callback_freq: number
 
 	_G.Timer._Callbacks[callback_name]["freq"] = callback_freq
 end
-
--- TODO:
---[[
--- add 'TryAddBeatCallback' and 'TryAddTickCallback' (wrap addCallBack wihin a pcall, return result)
---]]

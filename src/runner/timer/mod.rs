@@ -21,9 +21,11 @@ impl Module for TimerModule {
             .get("Timer")
             .expect("Didn't find 'Timer' table");
 
-        let callbacks: Table = timer.get("_Callbacks").expect("Didn't find `Timer._Callbacks`");
+        let callbacks: Table = timer
+            .get("_Callbacks")
+            .expect("Didn't find `Timer._Callbacks`");
         let bpm: f64 = timer.get("BPM").expect("Invalid BPM");
-        
+
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
             let (key, value) = pair.expect("Invalid callback");
@@ -40,12 +42,15 @@ impl Module for TimerModule {
                     let time = time.clone();
 
                     value.set("time", time);
-                    call_func.call::<()>(time).expect("Error occured while running beat update");
+                    call_func
+                        .call::<()>(time)
+                        .expect("Error occured while running beat update");
                 }
-            }
-            else {
+            } else {
                 let time = time.clone();
-                call_func.call::<()>(time).expect("Error occured while running tick update");
+                call_func
+                    .call::<()>(time)
+                    .expect("Error occured while running tick update");
             }
         }
     }
@@ -199,6 +204,55 @@ mod tests {
         assert_eq!(
             user_call.get::<String>("type").expect("Didn't find type"),
             "beat"
+        );
+    }
+
+    #[test]
+    fn test_get_callback_type() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+
+        lua.load(timer::LUA_MODULE)
+            .exec()
+            .expect("Failed to load lua module");
+
+        // Test success case
+        let success_case = r#"
+            local timer = _G.Timer
+
+            local function userCallFunction()
+
+            end
+
+            timer.AddTickCallback("TickCall", userCallFunction)
+            timer.AddBeatCallback("BeatCall", 1.0, userCallFunction)
+
+            _G.TestValue_Tick = timer.GetCallbackType("TickCall")
+            _G.TestValue_Beat = timer.GetCallbackType("BeatCall")
+            _G.TestValue_Nil = timer.GetCallbackType("NilCallback")
+        "#;
+
+        assert!(lua.load(success_case).exec().is_ok());
+
+        // Test global now
+        let timer: Table = globals.get("Timer").expect("Timer table not found");
+
+        assert_eq!(
+            globals
+                .get::<String>("TestValue_Tick")
+                .expect("Didn't find type"),
+            "tick"
+        );
+        assert_eq!(
+            globals
+                .get::<String>("TestValue_Beat")
+                .expect("Didn't find type"),
+            "beat"
+        );
+        assert!(
+            !globals
+                .contains_key("TestValue_Nil")
+                .expect("Error checking for key")
         );
     }
 }
