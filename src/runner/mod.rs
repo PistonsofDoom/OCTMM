@@ -43,7 +43,7 @@ impl Runner {
 
     /// Load the program and run it
     pub fn run(&self) {
-        // Initialize internal all modules
+        // Initialize all internal modules
         for module in &self.modules {
             module.init(&self.lua);
             self.load_program(module.get_program(), module.get_name());
@@ -71,7 +71,7 @@ impl Runner {
                 break;
             }
 
-            // Give the CPU a lil snooze, assuming its not already maxed out
+            // Give the CPU a lil snooze
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
 
@@ -79,5 +79,42 @@ impl Runner {
         for module in &self.modules {
             module.end(&self.lua);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{project::Project, runner::Runner, test_utils::make_test_dir};
+    use std::fs::File;
+    use std::io::Write;
+
+    #[test]
+    fn test_runner() {
+        let tmp = make_test_dir("runner_test");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        // Make test project
+        assert!(Project::new(&tmp, &"runner_test_prj".to_string()).is_ok());
+
+        let mut proj_dir = tmp.clone();
+        proj_dir.push("runner_test_prj");
+
+        // Modify program file
+        let mut program_dir = proj_dir.clone();
+        program_dir.push(crate::project::FILE_PROGRAM);
+
+        let mut program = File::create(program_dir).expect("Couldn't create file");
+        program
+            .write_all(b"_G.EndSong = true")
+            .expect("Couldn't write to file");
+
+        // Load project
+        let project = Project::load(&proj_dir).expect("Failed to load project");
+
+        // Test Runner
+        let runner = Runner::new(project);
+
+        runner.run();
     }
 }

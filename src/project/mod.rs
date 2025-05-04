@@ -3,8 +3,8 @@ use std::fs::File;
 use std::path::PathBuf;
 
 /* Constants for directory/file names */
-const DIR_MODULES: &str = "modules";
-const FILE_PROGRAM: &str = "program.luau";
+pub const DIR_MODULES: &str = "modules";
+pub const FILE_PROGRAM: &str = "program.luau";
 
 #[derive(Debug)]
 pub enum ProjectError {
