@@ -13,7 +13,9 @@ impl TimerModule {
 
 impl Module for TimerModule {
     fn init(&self, lua: &Lua) {
-        println!("Initializing TimerModule");
+        lua.load(LUA_MODULE)
+            .exec()
+            .expect("Failed to load timer module, got\n");
     }
     fn update(&self, time: &f64, lua: &Lua) {
         let timer: Table = lua
@@ -29,19 +31,28 @@ impl Module for TimerModule {
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
             let (key, value) = pair.expect("Invalid callback");
+            let name: &str = &key.to_str().expect("Invalid callback key");
 
-            let call_type: String = value.get("type").expect("Invalid callback type");
-            let call_func: Function = value.get("func").expect("Invalid callback function");
+            let call_type: String = value
+                .get("type")
+                .expect(format!("Invalid callback type on callback {}:", name).as_str());
+            let call_func: Function = value
+                .get("func")
+                .expect(format!("Invalid callback function on callback {}:", name).as_str());
 
             if call_type == "beat" {
-                let call_freq: f64 = value.get("freq").expect("Invalid callback frequency");
+                let call_freq: f64 = value
+                    .get("freq")
+                    .expect(format!("Invalid callback frequency on callback {}:", name).as_str());
                 let call_time: f64 = value.get("time").unwrap_or(0.0);
 
                 // If function should be called
                 if time - call_time >= (60.0 / bpm) / call_freq {
                     let time = time.clone();
 
-                    value.set("time", time);
+                    value
+                        .set("time", time)
+                        .expect("Failed to set callback time");
                     call_func
                         .call::<()>(time)
                         .expect("Error occured while running beat update");
@@ -54,17 +65,7 @@ impl Module for TimerModule {
             }
         }
     }
-    fn end(&self, lua: &Lua) {
-        println!("Ending TimerModule")
-    }
-
-    fn get_program(&self) -> &str {
-        LUA_MODULE
-    }
-
-    fn get_name(&self) -> &str {
-        "timer module"
-    }
+    fn end(&self, _lua: &Lua) {}
 }
 
 #[cfg(test)]
@@ -78,7 +79,7 @@ mod tests {
         let globals = lua.globals();
         let timer: &dyn Module = &TimerModule::new();
 
-        assert!(lua.load(timer.get_program()).exec().is_ok());
+        assert!(lua.load(timer::LUA_MODULE).exec().is_ok());
 
         // Init environment
         let test_program = r#"
@@ -101,6 +102,9 @@ mod tests {
 
         assert!(lua.load(test_program).exec().is_ok());
 
+        // Update timer twice, this should call
+        // the Tick Callback twice, and
+        // the Beat Callback once
         timer.update(&1.2, &lua);
         timer.update(&1.3, &lua);
 
@@ -120,7 +124,6 @@ mod tests {
     }
 
     // LUA CODE TESTS
-
     #[test]
     fn test_bpm_utilities() {
         let lua = Lua::new();
