@@ -15,6 +15,7 @@ fn main() {
         Some(Commands::Create(args)) => {
             let path: PathBuf;
 
+            // If no path is specified, use the current directory
             if args.path.is_none() {
                 path = env::current_dir().expect("Couldn't get current directory");
             } else {
@@ -26,6 +27,7 @@ fn main() {
         Some(Commands::Play(args)) => {
             let path: PathBuf;
 
+            // If no path is specified, use the current directory
             if args.path.is_none() {
                 path = env::current_dir().expect("Couldn't get current directory");
             } else {
@@ -33,7 +35,6 @@ fn main() {
             }
 
             let project = Project::load(&path).expect("Couldn't load project");
-
             let runner = Runner::new(project);
 
             runner.run();

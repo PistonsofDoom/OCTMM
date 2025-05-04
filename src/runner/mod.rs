@@ -43,7 +43,7 @@ impl Runner {
 
     /// Load the program and run it
     pub fn run(&self) {
-        // Initialize internal all modules
+        // Initialize all internal modules
         for module in &self.modules {
             module.init(&self.lua);
             self.load_program(module.get_program(), module.get_name());
@@ -71,7 +71,7 @@ impl Runner {
                 break;
             }
 
-            // Give the CPU a lil snooze, assuming its not already maxed out
+            // Give the CPU a lil snooze
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
 
