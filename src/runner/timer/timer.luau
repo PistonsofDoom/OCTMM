@@ -9,6 +9,7 @@ local TIMER_CALLBACK_BEAT = "beat"
 -- Initialize Globals
 _G.Timer = {};
 _G.Timer._Callbacks = {};
+_G.Timer._BPM = 120;
 
 -- Local utility functions
 
@@ -41,6 +42,28 @@ end
 
 -- Global Functions
 
+-- SetBPM(
+-- 		bpm - [Number] New BPM of the song, has to be > 0, can
+-- 			  be a decimal.
+-- )
+-- 
+-- Set the BPM of the song
+_G.Timer.SetBPM = function(bpm: number)
+	if bpm <= 0 then
+		error("Tried to set the BPM <= 0")
+	end
+
+	_G.Timer._BPM = bpm
+end
+
+-- GetBPM(
+-- ) -> [Number] Current BPM
+--
+-- Returns the current BPM of the song
+_G.Timer.GetBPM = function() 
+	return _G.Timer._BPM
+end
+
 --	AddTickCallback(
 --		callback_name - [String] Name of the callback function,
 --						needs to be unique
@@ -71,9 +94,99 @@ end
 --	per beat
 _G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number, callback_func)
 	if callback_freq <= 0 then
-		error("Tried to AddBeatCallback " + callback_name + " with a frequency below 0")
+		error("Tried to AddBeatCallback "..callback_name.." with a frequency below 0")
 	end
 	addCallback(callback_name, TIMER_CALLBACK_BEAT, callback_freq, callback_func)
 end
 
+--  RemoveCallback(
+--  	callback_name - [String] Name of the callback function
+--  					to remove.
+--  ) -> [Bool] - Whether or not a callback was removed
+--
+--  Remove a callback, and return whether one existed before being
+--  removed.
+_G.Timer.RemoveCallback = function(callback_name: string)
+	local removed_callback = false
 
+	if _G.Timer.IsCallback(callback_name) then
+		removed_callback = true
+	end
+
+	_G.Timer._Callbacks[callback_name] = nil
+
+	return removed_callback
+end
+
+--  IsCallback(
+--  	callback_name - [String] Name of the callback functon to
+--  					check for.
+--  ) -> [Bool] - Whether or not the callback exists
+--
+--  Returns whether or not the specified callback exists
+_G.Timer.IsCallback = function(callback_name: string)
+	if not _G.Timer._Callbacks[callback_name] then
+		return false
+	end
+
+	return true
+end
+
+--  GetCallbackType(
+--  	callback_name - [String] Name of the callback function to
+--  					check the type of
+--  ) -> [String] Type of the callback, or nil if no callback was found
+--
+--  Get the type of a callback, or nil if no callback exists
+_G.Timer.GetCallbackType = function(callback_name: string)
+	if not _G.Timer._Callbacks[callback_name] then
+		return nil
+	end
+
+	return _G.Timer._Callbacks[callback_name]["type"]
+end
+
+--  GetCallbackFreq(
+--  	callback_name - [String] Name of the callback function to
+--  					check the type of
+--  ) -> [Number] Frequency of the callback, or nil if no callback was found,
+--  	or the callback was not of type "beat"
+--
+--  Get the frequency of a callback, or nil if no callback exists, or
+--  the callback type is not "beat"
+_G.Timer.GetCallbackFreq = function(callback_name: string)
+	if not _G.Timer._Callbacks[callback_name] then
+		return nil
+	end
+
+	if _G.Timer._Callbacks[callback_name]["type"] ~= "beat" then
+		return nil
+	end
+
+	return _G.Timer._Callbacks[callback_name]["freq"]
+end
+
+--  SetCallbackFreq(
+--  	callback_name - [String] Name of the callback function to
+--  					check the type of
+--  	callback_freq - [Number] Target frequency of the callback
+--  )
+--
+--  Set the frequency of a callback, throws an error if the callback
+--  doesn't exist, or the callback type isn't "beat"
+_G.Timer.SetCallbackFreq = function(callback_name: string, callback_freq: number)
+	
+	if not _G.Timer._Callbacks[callback_name] then
+		error("Callback "..callback_name.." doesn't exist")
+	end
+
+	if _G.Timer._Callbacks[callback_name]["type"] ~= "beat" then
+		error("Callback "..callback_name.." type isn't beat")
+	end
+
+	if callback_freq <= 0 then
+		error("Tried to set frequency for callback "..callback_name.." below 0")
+	end
+
+	_G.Timer._Callbacks[callback_name]["freq"] = callback_freq
+end

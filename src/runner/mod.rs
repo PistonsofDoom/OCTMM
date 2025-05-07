@@ -7,9 +7,6 @@ pub trait Module {
     fn init(&self, lua: &Lua);
     fn update(&self, time: &f64, lua: &Lua);
     fn end(&self, lua: &Lua);
-
-    fn get_program(&self) -> &str;
-    fn get_name(&self) -> &str;
 }
 
 pub struct Runner {
@@ -22,23 +19,12 @@ pub struct Runner {
 impl Runner {
     /// Creates a new runner based off a pre-existing project.
     pub fn new(project: Project) -> Runner {
-        let lua = Lua::new();
         Runner {
             project: project,
             now: std::time::Instant::now(),
-            lua: lua,
+            lua: Lua::new(),
             modules: [Box::new(TimerModule::new())],
         }
-    }
-
-    /// Load a string containing Luau code, then execute it
-    /// Also takes in a 'name', which is only used for the
-    /// error message
-    fn load_program(&self, program: &str, name: &str) {
-        self.lua
-            .load(program)
-            .exec()
-            .expect(format!("Failed to load \"{}\", got\n", name).as_str());
     }
 
     /// Load the program and run it
@@ -46,11 +32,13 @@ impl Runner {
         // Initialize all internal modules
         for module in &self.modules {
             module.init(&self.lua);
-            self.load_program(module.get_program(), module.get_name());
         }
 
         // Load user program
-        self.load_program(self.project.get_program(), "user program");
+        self.lua
+            .load(self.project.get_program())
+            .exec()
+            .expect("Failed to load user program, got\n");
 
         // Initiate program loop
         let globals = self.lua.globals();
