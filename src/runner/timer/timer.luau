@@ -60,7 +60,7 @@ end
 -- ) -> [Number] Current BPM
 --
 -- Returns the current BPM of the song
-_G.Timer.GetBPM = function()
+_G.Timer.GetBPM = function() 
 	return _G.Timer._BPM
 end
 
@@ -121,7 +121,7 @@ end
 --  IsCallback(
 --  	callback_name - [String] Name of the callback functon to
 --  					check for.
---  )
+--  ) -> [Bool] - Whether or not the callback exists
 --
 --  Returns whether or not the specified callback exists
 _G.Timer.IsCallback = function(callback_name: string)
