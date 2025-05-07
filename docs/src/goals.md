@@ -2,7 +2,7 @@
 ### Primary Goals
 
 - [x] CLI Parser
-- [ ] MLua crate setup & usage
+- [x] MLua crate setup & usage
 - [ ] fundsp / Live Audio Integration
 - [ ] Sample Playback
 - [ ] Note Utilities
