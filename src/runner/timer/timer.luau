@@ -50,7 +50,7 @@ end
 -- Set the BPM of the song
 _G.Timer.SetBPM = function(bpm: number)
 	if bpm <= 0 then
-		error("Tried to set a BPM <= 0")
+		error("Tried to set the BPM <= 0")
 	end
 
 	_G.Timer._BPM = bpm
