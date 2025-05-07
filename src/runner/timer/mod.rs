@@ -51,18 +51,26 @@ impl Module for TimerModule {
                 if time - call_time >= (60.0 / bpm) / call_freq {
                     let time = time.clone();
 
-                    value
-                        .set("time", time)
-                        .expect(format!("Failed to set callback time on callback {}:", name).as_str());
-                    call_func
-                        .call::<()>(time)
-                        .expect(format!("Error occured while running beat update on callback {}:", name).as_str());
+                    value.set("time", time).expect(
+                        format!("Failed to set callback time on callback {}:", name).as_str(),
+                    );
+                    call_func.call::<()>(time).expect(
+                        format!(
+                            "Error occured while running beat update on callback {}:",
+                            name
+                        )
+                        .as_str(),
+                    );
                 }
             } else {
                 let time = time.clone();
-                call_func
-                    .call::<()>(time)
-                    .expect(format!("Error occured while running tick update on callback {}:", name).as_str());
+                call_func.call::<()>(time).expect(
+                    format!(
+                        "Error occured while running tick update on callback {}:",
+                        name
+                    )
+                    .as_str(),
+                );
             }
         }
     }
@@ -88,6 +96,8 @@ mod tests {
 
             _G.TestValue_Tick = 0
             _G.TestValue_Beat = 0
+            _G.TestValue_Beat2 = 0
+
 
             local function tick_callback()
                 _G.TestValue_Tick += 1
@@ -97,8 +107,15 @@ mod tests {
                 _G.TestValue_Beat += 1
             end
 
+            local function beat2_callback()
+                _G.TestValue_Beat2 += 1
+            end
+
+            timer.SetBPM(60)
+
             timer.AddTickCallback("TickCall", tick_callback)
             timer.AddBeatCallback("BeatCall", 1.0, beat_callback)
+            timer.AddBeatCallback("Beat2Call", 2.0, beat2_callback)
         "#;
 
         assert!(lua.load(test_program).exec().is_ok());
@@ -106,13 +123,20 @@ mod tests {
         // Update timer twice, this should call
         // the Tick Callback twice, and
         // the Beat Callback once
-        timer.update(&1.2, &lua);
-        timer.update(&1.3, &lua);
+        timer.update(&0.5, &lua);
+        timer.update(&1.0, &lua);
+        timer.update(&1.25, &lua);
 
         // Test Values
         assert_eq!(
             globals
                 .get::<f64>("TestValue_Tick")
+                .expect("Didn't find freq"),
+            3.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat2")
                 .expect("Didn't find freq"),
             2.0
         );
