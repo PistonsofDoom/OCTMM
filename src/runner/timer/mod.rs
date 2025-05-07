@@ -46,22 +46,23 @@ impl Module for TimerModule {
                     .expect(format!("Invalid callback frequency on callback {}:", name).as_str());
                 let call_time: f64 = value.get("time").unwrap_or(0.0);
 
-                // If function should be called
+                // call_freq is how many times it is called per beat,
+                // NOT how many beats until it is called
                 if time - call_time >= (60.0 / bpm) / call_freq {
                     let time = time.clone();
 
                     value
                         .set("time", time)
-                        .expect("Failed to set callback time");
+                        .expect(format!("Failed to set callback time on callback {}:", name).as_str());
                     call_func
                         .call::<()>(time)
-                        .expect("Error occured while running beat update");
+                        .expect(format!("Error occured while running beat update on callback {}:", name).as_str());
                 }
             } else {
                 let time = time.clone();
                 call_func
                     .call::<()>(time)
-                    .expect("Error occured while running tick update");
+                    .expect(format!("Error occured while running tick update on callback {}:", name).as_str());
             }
         }
     }
