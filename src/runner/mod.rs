@@ -1,7 +1,8 @@
-use crate::{project::Project, runner::timer::TimerModule};
+use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
 use mlua::*;
 
 mod timer;
+mod dsp;
 
 pub trait Module {
     fn init(&self, lua: &Lua);
@@ -13,7 +14,7 @@ pub struct Runner {
     project: Project,
     now: std::time::Instant,
     lua: Lua,
-    modules: [Box<dyn Module>; 1],
+    modules: [Box<dyn Module>; 2],
 }
 
 impl Runner {
@@ -23,7 +24,7 @@ impl Runner {
             project: project,
             now: std::time::Instant::now(),
             lua: Lua::new(),
-            modules: [Box::new(TimerModule::new())],
+            modules: [Box::new(TimerModule::new()), Box::new(DspModule::new())],
         }
     }
 
