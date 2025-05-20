@@ -1,8 +1,8 @@
 use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
 use mlua::*;
 
-mod timer;
 mod dsp;
+mod timer;
 
 pub trait Module {
     fn init(&self, lua: &Lua);
