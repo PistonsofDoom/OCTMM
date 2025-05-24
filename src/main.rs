@@ -22,7 +22,7 @@ fn main() {
                 path = args.path.clone().unwrap();
             }
 
-            Project::new(&path, &args.name).expect("Failed to create project");
+            Project::create(&path, &args.name).expect("Failed to create project");
         }
         Some(Commands::Play(args)) => {
             let path: PathBuf;
