@@ -51,6 +51,7 @@
  *
 */
 use crate::runner::Module;
+use fundsp::hacker32::*;
 use mlua::Lua;
 
 #[derive(Debug)]
@@ -67,8 +68,8 @@ enum Instruction {
 
     // Special
     Shared(String),
-    Constant(f64),
-    Group(std::string::String),
+    Constant(f32),
+    Group(String),
 }
 
 impl Instruction {
@@ -99,7 +100,7 @@ impl Instruction {
         }
 
         // Constants Enum
-        let number = s.parse::<f64>();
+        let number = s.parse::<f32>();
 
         if number.is_ok() {
             return Some(Instruction::Constant(number.unwrap()));
@@ -135,6 +136,7 @@ pub enum ParseError {
     BadOperator(char),
     BadInstruction(String),
     MissingInstruction,
+    ConvertInstruction,
 }
 
 pub struct DspModule {}
@@ -144,7 +146,26 @@ impl DspModule {
         DspModule {}
     }
 
-    pub fn parse_string(&self, input: &String) -> Result<(), ParseError> {
+    fn get_unit_from_instruction(
+        &self,
+        inst: &Instruction,
+    ) -> Result<Box<dyn AudioUnit>, ParseError> {
+        match inst {
+            Instruction::Hammond => Ok(Box::new(hammond())),
+            Instruction::Organ => Ok(Box::new(organ())),
+            Instruction::Pulse => Ok(Box::new(pulse())),
+            Instruction::Saw => Ok(Box::new(saw())),
+            Instruction::Sine => Ok(Box::new(sine())),
+            Instruction::SoftSaw => Ok(Box::new(soft_saw())),
+            Instruction::Square => Ok(Box::new(square())),
+            Instruction::Triangle => Ok(Box::new(triangle())),
+            Instruction::Shared(s) => Ok(Box::new(constant(1.0))),
+            Instruction::Constant(n) => Ok(Box::new(constant(n.clone()))),
+            Instruction::Group(s) => self.parse_string(s),
+        }
+    }
+
+    pub fn parse_string(&self, input: &String) -> Result<Box<dyn AudioUnit>, ParseError> {
         // Modify string to be easier to parse
         let mut filtered = input.clone();
 
@@ -257,8 +278,14 @@ impl DspModule {
         // String has been parsed, instructions & operations
         // vectors contain the steps needed to create
         // the AudioUnit
-        let inst_index: u16 = 0;
-        let source; // = //audiounit
+        let mut inst_index: usize = 0;
+        let source = self.get_unit_from_instruction(&instructions[0]);
+
+        if source.is_err() {
+            return Err(ParseError::ConvertInstruction);
+        }
+
+        let source = source.unwrap();
 
         // For this step, source is the input to the next thing
         // AKA, this is the combined audio unit.
@@ -274,9 +301,13 @@ impl DspModule {
             if inst_index >= instructions.len() {
                 return Err(ParseError::MissingInstruction);
             }
+
+            let inst = &instructions[inst_index];
+
+            inst_index += 1;
         }
 
-        Ok(())
+        Ok(source)
     }
 }
 
@@ -299,9 +330,9 @@ mod tests {
         let dspmod = DspModule::new();
 
         let result = dspmod.parse_string(&":freq >> (sine+(saw * 0.5)) * :amp".to_string());
-        println!("{:?}", result);
+        //println!("{:?}", result);
         let result = dspmod.parse_string(&":freq >> ((sine * 0.5)+saw) * (:amp + 1.0)".to_string());
-        println!("{:?}", result);
+        //println!("{:?}", result);
 
         println!("    =-=-=-=-=-=-=-=-=-=-=-=-");
         println!("            test end      ");
