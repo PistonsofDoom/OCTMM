@@ -46,9 +46,7 @@ impl Module for TimerModule {
                     .expect(format!("Invalid callback frequency on callback {}:", name).as_str());
                 let call_time: f64 = value.get("time").unwrap_or(0.0);
 
-                // call_freq is how many times it is called per beat,
-                // NOT how many beats until it is called
-                if time - call_time >= (60.0 / bpm) / call_freq {
+                if time - call_time >= (60.0 / bpm) * call_freq {
                     let time = time.clone();
 
                     value.set("time", time).expect(
@@ -114,8 +112,8 @@ mod tests {
             timer.SetBPM(60)
 
             timer.AddTickCallback("TickCall", tick_callback)
-            timer.AddBeatCallback("BeatCall", 1.0, beat_callback)
-            timer.AddBeatCallback("Beat2Call", 2.0, beat2_callback)
+            timer.AddBeatCallback("BeatCall", 1, beat_callback)
+            timer.AddBeatCallback("Beat2Call", 1/2, beat2_callback)
         "#;
 
         assert!(lua.load(test_program).exec().is_ok());
