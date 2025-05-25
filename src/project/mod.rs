@@ -41,7 +41,7 @@ pub struct Project {
 impl Project {
     /// Creates a new project at a specified file directory with the
     /// specified name
-    pub fn new(path: &PathBuf, name: &String) -> Result<(), ProjectError> {
+    pub fn create(path: &PathBuf, name: &String) -> Result<(), ProjectError> {
         // Sanity check name
         if !name
             .chars()
@@ -130,9 +130,9 @@ mod tests {
     use crate::{project::Project, test_utils::make_test_dir};
 
     #[test]
-    fn test_project_new() {
+    fn test_project_create() {
         // Setup
-        let tmp = make_test_dir("project_new");
+        let tmp = make_test_dir("project_create");
         assert!(tmp.is_some());
         let tmp = tmp.unwrap();
 
@@ -142,7 +142,7 @@ mod tests {
 
         // Should be created
         name = "abc123".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), true);
 
         // Confirm project contents
@@ -160,32 +160,32 @@ mod tests {
 
         // Should also be created
         name = "project-success".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), true);
 
         name = "project_success".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), true);
 
         // Shouldn't be created
         name = "project fail".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), false);
 
         name = "project$fail".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), false);
 
         name = "project.fail".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), false);
 
         name = "project/fail".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), false);
 
         name = "project\\fail".to_string();
-        test = Project::new(&tmp, &name);
+        test = Project::create(&tmp, &name);
         assert_eq!(test.is_ok(), false);
     }
 
@@ -197,7 +197,7 @@ mod tests {
         let tmp = tmp.unwrap();
 
         let name: String = "winner".to_string();
-        assert_eq!(Project::new(&tmp, &name).is_ok(), true);
+        assert_eq!(Project::create(&tmp, &name).is_ok(), true);
 
         // Test Success
         let mut test_path = tmp.clone();

@@ -84,7 +84,7 @@ mod tests {
         let tmp = tmp.unwrap();
 
         // Make test project
-        assert!(Project::new(&tmp, &"runner_test_prj".to_string()).is_ok());
+        assert!(Project::create(&tmp, &"runner_test_prj".to_string()).is_ok());
 
         let mut proj_dir = tmp.clone();
         proj_dir.push("runner_test_prj");
