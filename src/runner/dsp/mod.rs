@@ -111,7 +111,7 @@ impl Instruction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Operation {
     Sum,
     Diff,
@@ -149,23 +149,32 @@ impl DspModule {
     fn get_unit_from_instruction(
         &self,
         inst: &Instruction,
-    ) -> Result<Box<dyn AudioUnit>, ParseError> {
-        match inst {
-            Instruction::Hammond => Ok(Box::new(hammond())),
-            Instruction::Organ => Ok(Box::new(organ())),
-            Instruction::Pulse => Ok(Box::new(pulse())),
-            Instruction::Saw => Ok(Box::new(saw())),
-            Instruction::Sine => Ok(Box::new(sine())),
-            Instruction::SoftSaw => Ok(Box::new(soft_saw())),
-            Instruction::Square => Ok(Box::new(square())),
-            Instruction::Triangle => Ok(Box::new(triangle())),
-            Instruction::Shared(s) => Ok(Box::new(constant(1.0))),
-            Instruction::Constant(n) => Ok(Box::new(constant(n.clone()))),
-            Instruction::Group(s) => self.parse_string(s),
+    ) -> Result<Net, ParseError> {
+        // Check for Group
+        if let Instruction::Group(s) = inst {
+            return self.parse_string(s);
         }
+        
+        let mut net = Net::new(2,2);
+
+        match inst {
+            Instruction::Hammond => net.push(Box::new(hammond())),
+            Instruction::Organ => net.push(Box::new(organ())),
+            Instruction::Pulse => net.push(Box::new(pulse())),
+            Instruction::Saw => net.push(Box::new(saw())),
+            Instruction::Sine => net.push(Box::new(sine())),
+            Instruction::SoftSaw => net.push(Box::new(soft_saw())),
+            Instruction::Square => net.push(Box::new(square())),
+            Instruction::Triangle => net.push(Box::new(triangle())),
+            Instruction::Shared(s) => net.push(Box::new(constant(1.0))),
+            Instruction::Constant(n) => net.push(Box::new(constant(n.clone()))),
+            Instruction::Group(_) => panic!("internal error: Didn't create group earlier"),
+        };
+
+        Ok(net)
     }
 
-    pub fn parse_string(&self, input: &String) -> Result<Box<dyn AudioUnit>, ParseError> {
+    pub fn parse_string(&self, input: &String) -> Result<Net, ParseError> {
         // Modify string to be easier to parse
         let mut filtered = input.clone();
 
@@ -242,25 +251,31 @@ impl DspModule {
 
             if op.is_some() {
                 // Check if we somehow started with an operation
-                if current_string.chars().count() == 0 {
-                    return Err(ParseError::MissingInstruction);
+                if current_string.chars().count() == 0  {
+                    // If its the "difference" operator (-), allow parsing
+                    // to continue, but don't count it as an operation
+                    if op.unwrap() != Operation::Diff {
+                        return Err(ParseError::MissingInstruction);
+                    }
+                } else {
+
+                    let inst = Instruction::from_string(&current_string);
+
+                    // If instruction doesn't exist, throw an error
+                    if inst.is_none() {
+                        return Err(ParseError::BadInstruction(current_string));
+                    }
+
+                    instructions.push(inst.unwrap());
+                    current_string = String::new();
+                    operations.push(op.unwrap());
+                    continue;
                 }
-
-                let inst = Instruction::from_string(&current_string);
-
-                // If instruction doesn't exist, throw an error
-                if inst.is_none() {
-                    return Err(ParseError::BadInstruction(current_string));
-                }
-
-                instructions.push(inst.unwrap());
-                current_string = String::new();
-                operations.push(op.unwrap());
-            } else {
-                // Make lowercase, as we don't care if its
-                // SINE, sine, or SiNe
-                current_string += &c.to_lowercase().to_string();
             }
+
+            // Make lowercase, as we don't care if its
+            // SINE, sine, or SiNe
+            current_string += &c.to_lowercase().to_string();
         }
 
         // If current_string can be converted, add it to
@@ -278,14 +293,13 @@ impl DspModule {
         // String has been parsed, instructions & operations
         // vectors contain the steps needed to create
         // the AudioUnit
-        let mut inst_index: usize = 0;
-        let source = self.get_unit_from_instruction(&instructions[0]);
-
-        if source.is_err() {
+        let inst = self.get_unit_from_instruction(&instructions[0]);
+        if inst.is_err() {
             return Err(ParseError::ConvertInstruction);
         }
+        let mut net = Net::new(0,2);
 
-        let source = source.unwrap();
+        net.push(Box::new(inst.unwrap()));
 
         // For this step, source is the input to the next thing
         // AKA, this is the combined audio unit.
@@ -295,6 +309,7 @@ impl DspModule {
         // After all operations are done, this is done.
         // If there is a missing instruction for the operation,
         // then throw an error
+        let mut inst_index: usize = 1;
 
         for op in operations {
             // Bounds check
@@ -302,12 +317,23 @@ impl DspModule {
                 return Err(ParseError::MissingInstruction);
             }
 
-            let inst = &instructions[inst_index];
+            let inst = self.get_unit_from_instruction(&instructions[inst_index]);
+            if inst.is_err() {
+                return Err(ParseError::ConvertInstruction);
+            }
+            let inst = inst.unwrap();
+
+            match op {
+                Operation::Sum => net = net + inst,
+                Operation::Diff => net = net - inst,
+                Operation::Mix => net = net * inst,
+                Operation::Pipe => net = net >> inst,
+            };
 
             inst_index += 1;
         }
 
-        Ok(source)
+        Ok(net)
     }
 }
 
@@ -320,6 +346,7 @@ impl Module for DspModule {
 #[cfg(test)]
 mod tests {
     use crate::runner::DspModule;
+    use fundsp::audiounit::AudioUnit;
 
     #[test]
     fn test_string_parser() {
@@ -330,9 +357,9 @@ mod tests {
         let dspmod = DspModule::new();
 
         let result = dspmod.parse_string(&":freq >> (sine+(saw * 0.5)) * :amp".to_string());
-        //println!("{:?}", result);
+        println!("{}", result.unwrap().display());
         let result = dspmod.parse_string(&":freq >> ((sine * 0.5)+saw) * (:amp + 1.0)".to_string());
-        //println!("{:?}", result);
+        println!("{}", result.unwrap().display());
 
         println!("    =-=-=-=-=-=-=-=-=-=-=-=-");
         println!("            test end      ");
