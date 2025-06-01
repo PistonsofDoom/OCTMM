@@ -86,7 +86,7 @@ impl DspModule {
     // be created, which are then combined together in various ways (e.g., summing, mixing, piping)
     // This shouldn't create problems if the user program is written correctly, however if "voices"
     // are generated on the fly, rather than pre-generated, this could become a problem.
-    
+
     /// Check whether or an a network entry exists at the target index
     pub fn net_exists(&mut self, target: usize) -> bool {
         return target < self.nets.len();
@@ -161,8 +161,7 @@ impl DspModule {
         // Otherwise replace target_b with the pipe result
         if target_b <= 0 {
             return Some(self.net_from(&new_network));
-        }
-        else {
+        } else {
             return self.net_replace(target_b, &new_network);
         }
     }
@@ -188,7 +187,6 @@ impl DspModule {
             self.nets[target_net].commit();
         }
     }
-
 }
 
 impl Module for DspModule {
@@ -212,19 +210,19 @@ mod tests {
         assert!(!dsp.net_exists(0));
 
         // Test create network entries from net_from
-        let id1 = dsp.net_from(&Net::new(0,3));
+        let id1 = dsp.net_from(&Net::new(0, 3));
         assert_eq!(id1, 0);
         assert!(dsp.net_exists(0));
         assert!(!dsp.net_exists(1));
-        let id2 = dsp.net_from(&Net::new(0,4));
+        let id2 = dsp.net_from(&Net::new(0, 4));
         assert_eq!(id2, 1);
         assert!(dsp.net_exists(1));
 
         // Test net_replace
-        // TODO: make this actually test whether or not 
+        // TODO: make this actually test whether or not
         // the network was replaced
-        assert!(dsp.net_replace(2, &Net::new(5,5)).is_none());
-        assert_eq!(dsp.net_replace(1, &Net::new(5,5)), Some(1));
+        assert!(dsp.net_replace(2, &Net::new(5, 5)).is_none());
+        assert_eq!(dsp.net_replace(1, &Net::new(5, 5)), Some(1));
     }
 
     #[test]
