@@ -34,6 +34,7 @@
  *
 */
 use crate::runner::Module;
+use std::collections::HashMap;
 use fundsp::hacker32::*;
 use mlua::Lua;
 
@@ -107,12 +108,14 @@ impl NodeType {
 // TODO: Add nearly all NodeTypes as predefined nets
 pub struct DspModule {
     nets: Vec<Net>,
+    shared: HashMap<String, f32>,
 }
 
 impl DspModule {
     pub fn new() -> DspModule {
         DspModule {
             nets: NodeType::get_defaults(),
+            shared: HashMap::new()
         }
     }
 
@@ -147,6 +150,19 @@ impl DspModule {
         return Some(target);
     }
 
+    /// Create a new network that is a constant of the value
+    // NOTE: possible "optimization" by caching constants
+    pub fn net_constant(&mut self, value: f32) -> usize {
+        self.net_from(&Net::wrap(Box::new(constant(value))))
+    }
+
+    /// Create a new network using a reference to a shared value
+    pub fn net_create_shared(&mut self, shared_name: String) -> Option<usize> {
+        // TODO: Create this, but also create "shared value" manager functions
+        panic!("Not implemented!");
+        None
+    }
+
     pub fn net_vector_length(&self) -> usize {
         return self.nets.len();
     }
@@ -157,6 +173,8 @@ impl DspModule {
      * fundsp "Net" struct, but with more
      * checks
      */
+
+    // This should only work with constants / shared
     pub fn net_product(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
         if !self.net_exists(target_a) || !self.net_exists(target_b) {
             return None;
@@ -280,6 +298,10 @@ mod tests {
             dsp.net_replace(default_length, &Net::new(5, 5)),
             Some(default_length)
         );
+
+        // Test net_constant
+        // TODO: test value of constant?
+        assert_eq!(dsp.net_constant(12.3), default_length + 2);
     }
 
     #[test]
@@ -302,11 +324,11 @@ mod tests {
 
         let my_network = dsp.net_bus(hammond, square);
         assert!(my_network.is_some());
-        println!("{}",dsp.nets[my_network.unwrap()].inputs());
+        println!("{}", dsp.nets[my_network.unwrap()].inputs());
 
         let my_network = dsp.net_pipe(my_network.unwrap(), sine);
         assert!(my_network.is_some());
-        println!("{}",dsp.nets[my_network.unwrap()].inputs());
+        println!("{}", dsp.nets[my_network.unwrap()].inputs());
 
         let my_network = dsp.net_pipe(sine, my_network.unwrap());
         assert!(my_network.is_some());
