@@ -34,9 +34,9 @@
  *
 */
 use crate::runner::Module;
-use std::collections::HashMap;
 use fundsp::hacker32::*;
 use mlua::Lua;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 enum NodeType {
@@ -115,11 +115,28 @@ impl DspModule {
     pub fn new() -> DspModule {
         DspModule {
             nets: NodeType::get_defaults(),
-            shared: HashMap::new()
+            shared: HashMap::new(),
         }
     }
 
-    /* Network Management Functions */
+    /* Shared Management */
+
+    /// Returns whether a "shared" entry exists or not.
+    pub fn shared_exists(&mut self, name: &String) -> bool {
+        return self.shared.contains_key(name);
+    }
+
+    /// Set a shared value
+    pub fn shared_set(&mut self, name: &String, value: &f32) 
+    {
+        self.shared.insert(name.clone(), value.clone());
+    }
+
+    pub fn shared_get(&mut self, name: &String) -> Option<&f32> {
+        self.shared.get(name)
+    }
+
+    /* Network Management */
     /*
      * Utility functions to help manage the
      * storage of networks
@@ -157,7 +174,7 @@ impl DspModule {
     }
 
     /// Create a new network using a reference to a shared value
-    pub fn net_create_shared(&mut self, shared_name: String) -> Option<usize> {
+    pub fn net_from_shared(&mut self, shared_name: String) -> Option<usize> {
         // TODO: Create this, but also create "shared value" manager functions
         panic!("Not implemented!");
         None
@@ -167,7 +184,7 @@ impl DspModule {
         return self.nets.len();
     }
 
-    /* Network Functions */
+    /* Network Proxies */
     /*
      * Equivalent of the functions provided by the
      * fundsp "Net" struct, but with more
@@ -259,8 +276,24 @@ mod tests {
     use super::{DspModule, NodeType};
     use fundsp::hacker32::*;
 
+    /* Shared Testing */
+    #[test]
+    pub fn test_shared_management() {
+        let mut dsp = DspModule::new();
+        let test_name: String = "test shared".to_string();
+
+        // Creation / Exists
+        assert_eq!(dsp.shared_exists(&test_name), false);
+        dsp.shared_set(&test_name, &2.5);
+        assert_eq!(dsp.shared_exists(&test_name), true);
+
+        // Values
+        assert_eq!(dsp.shared_get(&test_name).unwrap(), &2.5);
+        dsp.shared_set(&test_name, &0.0);
+        assert_eq!(dsp.shared_get(&test_name).unwrap(), &0.0);
+    }
+
     /* Network Testing */
-    // Tests all network management functions
     #[test]
     pub fn test_net_management() {
         let mut dsp = DspModule::new();
