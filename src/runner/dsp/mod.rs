@@ -1,38 +1,3 @@
-/*
- * Valid Operations:
- * | Expr   | Name |
- * | A + B  | Sum  |
- * | A - B  | Diff |
- * | A * B  | Mix  |
- * | A >> B | Pipe |
- *
- * Order of Operations:
- *  Left to right, but with parenthesis to define specific order
- *
- * Oscillators:
- *  hammond
- *  organ
- *  pulse
- *  saw
- *  sine
- *  soft_saw
- *  square
- *  triangle
- *
- * Special:
- *  shared -> Defined by the character ':' before the start of a string key
- *            If no entry exists, it will default to 1.0
- *
- *  constants -> Any defined numbers
- *
- * Example:
- *
- * (:freq * 2.0) >> sine
- *
- * This is equivalent to taking a shared variable "freq", multiplying
- * it by 2, and piping it into a "sine" oscillator.
- *
-*/
 use crate::runner::Module;
 use fundsp::hacker32::*;
 use mlua::Lua;
