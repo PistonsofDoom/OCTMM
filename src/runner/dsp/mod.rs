@@ -39,7 +39,7 @@ use mlua::Lua;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-enum NodeType {
+pub enum NodeType {
     // Oscillators
     Hammond,
     Organ,
@@ -109,6 +109,7 @@ impl NodeType {
 pub struct DspModule {
     nets: Vec<Net>,
     shared: HashMap<String, Shared>,
+    shared_to_net: HashMap<String, usize>,
 }
 
 impl DspModule {
@@ -116,6 +117,7 @@ impl DspModule {
         DspModule {
             nets: NodeType::get_defaults(),
             shared: HashMap::new(),
+            shared_to_net: HashMap::new(),
         }
     }
 
@@ -127,19 +129,31 @@ impl DspModule {
     }
 
     /// Set a shared value
-    pub fn shared_set(&mut self, name: &String, value: &f32) {
+    pub fn shared_set(&mut self, name: &String, value: &f32) -> usize {
         let entry = self.shared_get(name);
 
         if entry.is_none() {
             self.shared.insert(name.clone(), shared(value.clone()));
-        }
-        else {
+
+            let entry = Box::new(var(&self
+                .shared_get(name)
+                .expect("Failed to create shared")));
+            let net_id = self.net_from(&Net::wrap(entry));
+
+            self.shared_to_net.insert(name.clone(), net_id.clone());
+            return net_id;
+        } else {
             entry.unwrap().set(value.clone());
+            return self.shared_get_net(name).expect("No net id").clone();
         }
     }
 
-    pub fn shared_get(&mut self, name: &String) -> Option<&Shared> {
+    pub fn shared_get(&self, name: &String) -> Option<&Shared> {
         self.shared.get(name)
+    }
+
+    pub fn shared_get_net(&self, name: &String) -> Option<&usize> {
+        self.shared_to_net.get(name)
     }
 
     /* Network Management */
@@ -177,13 +191,6 @@ impl DspModule {
     // NOTE: possible "optimization" by caching constants
     pub fn net_constant(&mut self, value: f32) -> usize {
         self.net_from(&Net::wrap(Box::new(constant(value))))
-    }
-
-    /// Create a new network using a reference to a shared value
-    pub fn net_from_shared(&mut self, shared_name: String) -> Option<usize> {
-        // TODO: Create this, but also create "shared value" manager functions
-        panic!("Not implemented!");
-        None
     }
 
     pub fn net_vector_length(&self) -> usize {
@@ -357,10 +364,13 @@ mod tests {
 
         // TODO: Test net_product when Constant / Shared is implemented
         let constant = dsp.net_constant(2.2);
+        let my_shared = dsp.shared_set(&"my_shared".to_string(), &0.5);
 
         let my_network = dsp.net_product(hammond, organ);
         assert!(my_network.is_none());
         let my_network = dsp.net_product(hammond, constant);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_product(my_network.unwrap(), my_shared);
         assert!(my_network.is_some());
 
         // TODO: Test shared
