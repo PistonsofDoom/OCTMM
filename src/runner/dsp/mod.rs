@@ -41,7 +41,6 @@ impl NodeType {
             NodeType::SoftSaw => Some(4),
             NodeType::Square => Some(5),
             NodeType::Triangle => Some(6),
-            _ => None,
         }
     }
 
@@ -323,6 +322,7 @@ mod tests {
         let constant = dsp.net_constant(2.2);
         let my_shared = dsp.shared_set(&"my_shared".to_string(), &0.5);
 
+        // Test net_product
         let my_network = dsp.net_product(hammond, organ);
         assert!(my_network.is_none());
 
@@ -332,15 +332,25 @@ mod tests {
         let my_network = dsp.net_product(my_network.unwrap(), my_shared);
         assert!(my_network.is_some());
 
+        // Test net_bus
         let my_network = dsp.net_bus(hammond, square);
         assert!(my_network.is_some());
 
+        let my_network = dsp.net_bus(my_network.unwrap(), softsaw);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_bus(my_network.unwrap(), triangle);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_bus(my_network.unwrap(), saw);
+        assert!(my_network.is_some());
+
+        // Test net_pipe
         let my_network = dsp.net_pipe(my_network.unwrap(), sine);
         assert!(my_network.is_some());
 
         let my_network = dsp.net_pipe(sine, my_network.unwrap());
         assert!(my_network.is_some());
 
+        // Test net_chain
         let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
         assert!(my_node_id.is_some());
     }
