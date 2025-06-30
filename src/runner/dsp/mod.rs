@@ -48,10 +48,6 @@ pub enum NodeType {
     SoftSaw,
     Square,
     Triangle,
-
-    // Special Number
-    Shared(String),
-    Constant(f32),
 }
 
 impl NodeType {
@@ -64,8 +60,6 @@ impl NodeType {
             NodeType::SoftSaw => Box::new(soft_saw()),
             NodeType::Square => Box::new(square()),
             NodeType::Triangle => Box::new(triangle()),
-            NodeType::Shared(key) => panic!("Not implemented"),
-            NodeType::Constant(num) => Box::new(constant(num.clone())),
         }
     }
 
@@ -105,7 +99,6 @@ impl NodeType {
     }
 }
 
-// TODO: Add nearly all NodeTypes as predefined nets
 pub struct DspModule {
     nets: Vec<Net>,
     shared: HashMap<String, Shared>,
@@ -255,14 +248,6 @@ impl DspModule {
         return Some(self.net_from(&new_network));
     }
 
-    /*pub fn net_push(&mut self, target_net: usize, node_type: NodeType) -> Option<NodeId> {
-        if !self.net_exists(target_net) {
-            return None;
-        }
-
-        Some(self.nets[target_net].push(node_type.as_unit()))
-    }*/
-
     pub fn net_chain(&mut self, target_net: usize, node_type: &NodeType) -> Option<NodeId> {
         if !self.net_exists(target_net) {
             return None;
@@ -362,18 +347,17 @@ mod tests {
         let square = NodeType::Square.as_net_id().expect("No ID exists");
         let triangle = NodeType::Triangle.as_net_id().expect("No ID exists");
 
-        // TODO: Test net_product when Constant / Shared is implemented
         let constant = dsp.net_constant(2.2);
         let my_shared = dsp.shared_set(&"my_shared".to_string(), &0.5);
 
         let my_network = dsp.net_product(hammond, organ);
         assert!(my_network.is_none());
+
         let my_network = dsp.net_product(hammond, constant);
         assert!(my_network.is_some());
+
         let my_network = dsp.net_product(my_network.unwrap(), my_shared);
         assert!(my_network.is_some());
-
-        // TODO: Test shared
 
         let my_network = dsp.net_bus(hammond, square);
         assert!(my_network.is_some());
