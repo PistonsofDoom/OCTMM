@@ -108,7 +108,7 @@ impl NodeType {
 // TODO: Add nearly all NodeTypes as predefined nets
 pub struct DspModule {
     nets: Vec<Net>,
-    shared: HashMap<String, f32>,
+    shared: HashMap<String, Shared>,
 }
 
 impl DspModule {
@@ -127,12 +127,18 @@ impl DspModule {
     }
 
     /// Set a shared value
-    pub fn shared_set(&mut self, name: &String, value: &f32) 
-    {
-        self.shared.insert(name.clone(), value.clone());
+    pub fn shared_set(&mut self, name: &String, value: &f32) {
+        let entry = self.shared_get(name);
+
+        if entry.is_none() {
+            self.shared.insert(name.clone(), shared(value.clone()));
+        }
+        else {
+            entry.unwrap().set(value.clone());
+        }
     }
 
-    pub fn shared_get(&mut self, name: &String) -> Option<&f32> {
+    pub fn shared_get(&mut self, name: &String) -> Option<&Shared> {
         self.shared.get(name)
     }
 
@@ -191,7 +197,7 @@ impl DspModule {
      * checks
      */
 
-    // This should only work with constants / shared
+    /// Only works with constants / shared
     pub fn net_product(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
         if !self.net_exists(target_a) || !self.net_exists(target_b) {
             return None;
@@ -288,9 +294,9 @@ mod tests {
         assert_eq!(dsp.shared_exists(&test_name), true);
 
         // Values
-        assert_eq!(dsp.shared_get(&test_name).unwrap(), &2.5);
+        assert_eq!(dsp.shared_get(&test_name).unwrap().value(), 2.5);
         dsp.shared_set(&test_name, &0.0);
-        assert_eq!(dsp.shared_get(&test_name).unwrap(), &0.0);
+        assert_eq!(dsp.shared_get(&test_name).unwrap().value(), 0.0);
     }
 
     /* Network Testing */
@@ -350,18 +356,20 @@ mod tests {
         let triangle = NodeType::Triangle.as_net_id().expect("No ID exists");
 
         // TODO: Test net_product when Constant / Shared is implemented
+        let constant = dsp.net_constant(2.2);
 
-        /*let my_network = dsp.net_product(hammond, organ);
+        let my_network = dsp.net_product(hammond, organ);
+        assert!(my_network.is_none());
+        let my_network = dsp.net_product(hammond, constant);
         assert!(my_network.is_some());
-        println!("{}",dsp.nets[my_network.unwrap()].inputs());*/
+
+        // TODO: Test shared
 
         let my_network = dsp.net_bus(hammond, square);
         assert!(my_network.is_some());
-        println!("{}", dsp.nets[my_network.unwrap()].inputs());
 
         let my_network = dsp.net_pipe(my_network.unwrap(), sine);
         assert!(my_network.is_some());
-        println!("{}", dsp.nets[my_network.unwrap()].inputs());
 
         let my_network = dsp.net_pipe(sine, my_network.unwrap());
         assert!(my_network.is_some());
