@@ -3,6 +3,8 @@ use fundsp::hacker32::*;
 use mlua::Lua;
 use std::collections::HashMap;
 
+const LUA_MODULE: &str = include_str!("dsp.luau");
+
 #[derive(Debug)]
 pub enum NodeType {
     // Oscillators
@@ -229,7 +231,11 @@ impl DspModule {
 }
 
 impl Module for DspModule {
-    fn init(&self, _lua: &Lua) {}
+    fn init(&self, lua: &Lua) {
+        lua.load(LUA_MODULE)
+            .exec()
+            .expect("Failed to load DSP module, got\n");
+    }
     fn update(&self, _time: &f64, _lua: &Lua) {}
     fn end(&self, _lua: &Lua) {}
 }
@@ -237,7 +243,9 @@ impl Module for DspModule {
 #[cfg(test)]
 mod tests {
     use super::{DspModule, NodeType};
+    use crate::runner::{Module, dsp};
     use fundsp::hacker32::*;
+    use mlua::Lua;
 
     /* Shared Testing */
     #[test]
@@ -336,4 +344,17 @@ mod tests {
         let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
         assert!(my_node_id.is_some());
     }
+
+    #[test]
+    fn test_rust_module() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let dsp: &dyn Module = &DspModule::new();
+
+        assert!(lua.load(dsp::LUA_MODULE).exec().is_ok());
+
+        // TODO: Actually add tests when lua module is written
+    }
+
+    // LUA CODE TESTS
 }
