@@ -230,13 +230,18 @@ impl DspModule {
 }
 
 impl Module for DspModule {
-    fn init(&self, lua: &Lua) {
+    fn init(&mut self, lua: &Lua) {
+        /*let table = lua.globals().set("DSP", lua.create_table().expect("Error creating DSP table"));
+        let shared_exists = lua.create_function_mut(|_, name: String| {
+            Ok(self.shared_exists(&name))
+        });*/
+
         lua.load(LUA_MODULE)
             .exec()
             .expect("Failed to load DSP module, got\n");
     }
-    fn update(&self, _time: &f64, _lua: &Lua) {}
-    fn end(&self, _lua: &Lua) {}
+    fn update(&mut self, _time: &f64, _lua: &Lua) {}
+    fn end(&mut self, _lua: &Lua) {}
 }
 
 #[cfg(test)]
@@ -359,9 +364,9 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let dsp: &dyn Module = &DspModule::new();
+        let dsp: &mut dyn Module = &mut DspModule::new();
 
-        assert!(lua.load(dsp::LUA_MODULE).exec().is_ok());
+        dsp.init(&lua);
 
         // TODO: Actually add tests when lua module is written
     }

@@ -5,9 +5,9 @@ mod dsp;
 mod timer;
 
 pub trait Module {
-    fn init(&self, lua: &Lua);
-    fn update(&self, time: &f64, lua: &Lua);
-    fn end(&self, lua: &Lua);
+    fn init(&mut self, lua: &Lua);
+    fn update(&mut self, time: &f64, lua: &Lua);
+    fn end(&mut self, lua: &Lua);
 }
 
 pub struct Runner {
@@ -29,9 +29,9 @@ impl Runner {
     }
 
     /// Load the program and run it
-    pub fn run(&self) {
+    pub fn run(&mut self) {
         // Initialize all internal modules
-        for module in &self.modules {
+        for module in &mut self.modules {
             module.init(&self.lua);
         }
 
@@ -50,7 +50,7 @@ impl Runner {
             let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
 
             // Update all internal modules
-            for module in &self.modules {
+            for module in &mut self.modules {
                 module.update(&time_passed, &self.lua);
             }
 
@@ -65,7 +65,7 @@ impl Runner {
         }
 
         // Call 'end' on all internal modules
-        for module in &self.modules {
+        for module in &mut self.modules {
             module.end(&self.lua);
         }
     }
@@ -102,7 +102,7 @@ mod tests {
         let project = Project::load(&proj_dir).expect("Failed to load project");
 
         // Test Runner
-        let runner = Runner::new(project);
+        let mut runner = Runner::new(project);
 
         runner.run();
     }

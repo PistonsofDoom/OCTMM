@@ -12,12 +12,12 @@ impl TimerModule {
 }
 
 impl Module for TimerModule {
-    fn init(&self, lua: &Lua) {
+    fn init(&mut self, lua: &Lua) {
         lua.load(LUA_MODULE)
             .exec()
             .expect("Failed to load timer module, got\n");
     }
-    fn update(&self, time: &f64, lua: &Lua) {
+    fn update(&mut self, time: &f64, lua: &Lua) {
         let timer: Table = lua
             .globals()
             .get("Timer")
@@ -72,7 +72,7 @@ impl Module for TimerModule {
             }
         }
     }
-    fn end(&self, _lua: &Lua) {}
+    fn end(&mut self, _lua: &Lua) {}
 }
 
 #[cfg(test)]
@@ -84,7 +84,7 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let timer: &dyn Module = &TimerModule::new();
+        let timer: &mut dyn Module = &mut TimerModule::new();
 
         assert!(lua.load(timer::LUA_MODULE).exec().is_ok());
 
