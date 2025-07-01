@@ -1,5 +1,5 @@
 use crate::runner::PollingModule;
-use mlua::{Lua, Scope, Table, Function, String};
+use mlua::{Function, Lua, Scope, String, Table};
 
 const LUA_MODULE: &str = include_str!("timer.luau");
 

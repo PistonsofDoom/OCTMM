@@ -243,10 +243,12 @@ impl CommandModule for DspModule {
     fn end(&mut self, _lua: &Lua) {}
 
     fn get_command_name(&self) -> String {
-        "test_command".to_string()
+        "_dsp_command_handler".to_string()
     }
-    fn command(&mut self, lua: &Lua, arg: &String) {
+    fn command(&mut self, lua: &Lua, arg: &String) -> String {
         println!("Ran command, arg was {}", arg);
+
+        "success".to_string()
     }
 }
 

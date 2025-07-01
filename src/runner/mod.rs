@@ -9,8 +9,7 @@ pub trait CommandModule {
     fn end(&mut self, lua: &Lua);
 
     fn get_command_name(&self) -> String;
-    fn command(&mut self, lua: &Lua, arg: &String);
-
+    fn command(&mut self, lua: &Lua, arg: &String) -> String;
 }
 
 pub trait PollingModule {
@@ -52,13 +51,15 @@ impl Runner {
             for module in &mut self.command_modules {
                 module.init(&self.lua);
 
-                self.lua.globals().set(
-                    module.get_command_name(),
-                    scope.create_function_mut(|_, ()| {
-                        module.command(&self.lua, &"test_arg".to_string());
-                        Ok(())
-                    })?,
-                ).expect("Error using command function");
+                self.lua
+                    .globals()
+                    .set(
+                        module.get_command_name(),
+                        scope.create_function_mut(|_, arg: String| {
+                            Ok(module.command(&self.lua, &arg))
+                        })?,
+                    )
+                    .expect("Error using command function");
             }
 
             // Load user program
@@ -73,7 +74,8 @@ impl Runner {
             let start_millis = self.now.elapsed().as_millis();
 
             loop {
-                let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+                let time_passed: f64 =
+                    (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
 
                 // Update all internal modules
                 for module in &mut self.polling_modules {
