@@ -41,8 +41,6 @@ impl Runner {
     /// Load the program and run it
     pub fn run(&mut self) {
         self.lua.scope(|scope| {
-            // Setup Lua functions
-
             // Initialize all internal modules
             for module in &mut self.polling_modules {
                 module.init(&self.lua);
