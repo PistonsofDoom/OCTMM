@@ -1,10 +1,19 @@
 use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
-use mlua::*;
+use mlua::{Lua, Scope, Table};
 
 mod dsp;
 mod timer;
 
-pub trait Module {
+pub trait CommandModule {
+    fn init(&mut self, lua: &Lua);
+    fn end(&mut self, lua: &Lua);
+
+    fn get_command_name(&self) -> String;
+    fn command(&mut self, lua: &Lua, arg: &String);
+
+}
+
+pub trait PollingModule {
     fn init(&mut self, lua: &Lua);
     fn update(&mut self, time: &f64, lua: &Lua);
     fn end(&mut self, lua: &Lua);
@@ -14,7 +23,8 @@ pub struct Runner {
     project: Project,
     now: std::time::Instant,
     lua: Lua,
-    modules: [Box<dyn Module>; 2],
+    command_modules: [Box<dyn CommandModule>; 1],
+    polling_modules: [Box<dyn PollingModule>; 1],
 }
 
 impl Runner {
@@ -24,48 +34,70 @@ impl Runner {
             project: project,
             now: std::time::Instant::now(),
             lua: Lua::new(),
-            modules: [Box::new(TimerModule::new()), Box::new(DspModule::new())],
+            command_modules: [Box::new(DspModule::new())],
+            polling_modules: [Box::new(TimerModule::new())],
         }
     }
 
     /// Load the program and run it
     pub fn run(&mut self) {
-        // Initialize all internal modules
-        for module in &mut self.modules {
-            module.init(&self.lua);
-        }
+        self.lua.scope(|scope| {
+            // Setup Lua functions
 
-        // Load user program
-        self.lua
-            .load(self.project.get_program())
-            .exec()
-            .expect("Failed to load user program, got\n");
-
-        // Initiate program loop
-        let globals = self.lua.globals();
-        // Compensate for long initilizations
-        let start_millis = self.now.elapsed().as_millis();
-
-        loop {
-            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
-
-            // Update all internal modules
-            for module in &mut self.modules {
-                module.update(&time_passed, &self.lua);
+            // Initialize all internal modules
+            for module in &mut self.polling_modules {
+                module.init(&self.lua);
             }
 
-            // Check if we should end the song
-            let end_song: bool = globals.get("EndSong").unwrap_or(false);
-            if end_song {
-                break;
+            for module in &mut self.command_modules {
+                module.init(&self.lua);
+
+                self.lua.globals().set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, ()| {
+                        module.command(&self.lua, &"test_arg".to_string());
+                        Ok(())
+                    })?,
+                ).expect("Error using command function");
             }
 
-            // Give the CPU a lil snooze
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        }
+            // Load user program
+            self.lua
+                .load(self.project.get_program())
+                .exec()
+                .expect("Failed to load user program, got\n");
 
-        // Call 'end' on all internal modules
-        for module in &mut self.modules {
+            // Initiate program loop
+            let globals = self.lua.globals();
+            // Compensate for long initilizations
+            let start_millis = self.now.elapsed().as_millis();
+
+            loop {
+                let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+
+                // Update all internal modules
+                for module in &mut self.polling_modules {
+                    module.update(&time_passed, &self.lua);
+                }
+
+                // Check if we should end the song
+                let end_song: bool = globals.get("EndSong").unwrap_or(false);
+                if end_song {
+                    break;
+                }
+
+                // Give the CPU a lil snooze
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+
+            // Call 'end' on all internal modules
+            Ok(())
+        });
+
+        for module in &mut self.polling_modules {
+            module.end(&self.lua);
+        }
+        for module in &mut self.command_modules {
             module.end(&self.lua);
         }
     }

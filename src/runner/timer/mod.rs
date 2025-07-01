@@ -1,5 +1,5 @@
-use crate::runner::Module;
-use mlua::*;
+use crate::runner::PollingModule;
+use mlua::{Lua, Scope, Table, Function, String};
 
 const LUA_MODULE: &str = include_str!("timer.luau");
 
@@ -11,7 +11,7 @@ impl TimerModule {
     }
 }
 
-impl Module for TimerModule {
+impl PollingModule for TimerModule {
     fn init(&mut self, lua: &Lua) {
         lua.load(LUA_MODULE)
             .exec()
@@ -77,14 +77,14 @@ impl Module for TimerModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{Module, TimerModule, timer};
+    use crate::runner::{PollingModule, TimerModule, timer};
     use mlua::*;
 
     #[test]
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let timer: &mut dyn Module = &mut TimerModule::new();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
 
         assert!(lua.load(timer::LUA_MODULE).exec().is_ok());
 

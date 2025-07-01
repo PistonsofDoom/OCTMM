@@ -1,4 +1,4 @@
-use crate::runner::Module;
+use crate::runner::CommandModule;
 use fundsp::hacker32::*;
 use mlua::Lua;
 use std::collections::HashMap;
@@ -229,7 +229,7 @@ impl DspModule {
     }
 }
 
-impl Module for DspModule {
+impl CommandModule for DspModule {
     fn init(&mut self, lua: &Lua) {
         /*let table = lua.globals().set("DSP", lua.create_table().expect("Error creating DSP table"));
         let shared_exists = lua.create_function_mut(|_, name: String| {
@@ -240,14 +240,20 @@ impl Module for DspModule {
             .exec()
             .expect("Failed to load DSP module, got\n");
     }
-    fn update(&mut self, _time: &f64, _lua: &Lua) {}
     fn end(&mut self, _lua: &Lua) {}
+
+    fn get_command_name(&self) -> String {
+        "test_command".to_string()
+    }
+    fn command(&mut self, lua: &Lua, arg: &String) {
+        println!("Ran command, arg was {}", arg);
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{DspModule, NodeType};
-    use crate::runner::{Module, dsp};
+    use crate::runner::{CommandModule, dsp};
     use fundsp::hacker32::*;
     use mlua::Lua;
 
@@ -364,7 +370,7 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let dsp: &mut dyn Module = &mut DspModule::new();
+        let dsp: &mut dyn CommandModule = &mut DspModule::new();
 
         dsp.init(&lua);
 
