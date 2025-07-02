@@ -231,11 +231,6 @@ impl DspModule {
 
 impl CommandModule for DspModule {
     fn init(&mut self, lua: &Lua) {
-        /*let table = lua.globals().set("DSP", lua.create_table().expect("Error creating DSP table"));
-        let shared_exists = lua.create_function_mut(|_, name: String| {
-            Ok(self.shared_exists(&name))
-        });*/
-
         lua.load(LUA_MODULE)
             .exec()
             .expect("Failed to load DSP module, got\n");
@@ -246,9 +241,49 @@ impl CommandModule for DspModule {
         "_dsp_command_handler".to_string()
     }
     fn command(&mut self, lua: &Lua, arg: &String) -> String {
-        println!("Ran command, arg was {}", arg);
+        let arg_vec: Vec<&str> = arg.split(';').collect();
 
-        "success".to_string()
+        let arg_cmd = arg_vec.get(0).expect("No command found\n");
+
+        match *arg_cmd {
+            "shared_exists" => {
+                let arg_name = arg_vec.get(1).expect("shared_exists, name not found");
+                return self.shared_exists(&arg_name.to_string()).to_string();
+            }
+            "shared_set" => {
+                let arg_name = arg_vec.get(1).expect("shared_set, name not found");
+                let arg_value = arg_vec.get(2).expect("shared_set, value not found").parse::<f32>().expect("shared_set, parsing error");
+
+                return self.shared_set(&arg_name.to_string(), &arg_value).to_string();
+            }
+            "shared_get" => {
+                let arg_name = arg_vec.get(1).expect("shared_get, name not found");
+                
+                let ret = self.shared_get(&arg_name.to_string());
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                } else {
+                    return ret.unwrap().value().to_string();
+                }
+            }
+            "shared_get_net" => {
+                let arg_name = arg_vec.get(1).expect("shared_get_net, name not found");
+                
+                let ret = self.shared_get_net(&arg_name.to_string());
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                } else {
+                    return ret.unwrap().to_string();
+                }
+            }
+            _ => {
+                panic!("Tried to call command {} which doesn't exist for DSP module", arg_cmd);
+            }
+        }
+
+        return "nil".to_string()
     }
 }
 
@@ -372,12 +407,71 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let dsp: &mut dyn CommandModule = &mut DspModule::new();
+        let module: &mut dyn CommandModule = &mut DspModule::new();
 
-        dsp.init(&lua);
+        lua.scope(|scope| {
+            module.init(&lua);
 
-        // TODO: Actually add tests when lua module is written
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            /*let test_program = r#"
+                _dsp_command_handler("command type;arg 2; arg3")
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+            assert!(globals.get::<bool>("SUCCESS").is_ok());
+            assert!(globals.get::<bool>("SUCCESS").unwrap());*/
+
+            Ok(())
+        });
     }
 
     // LUA CODE TESTS
+    #[test]
+    fn test_shared_commands() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut DspModule::new();
+
+        lua.scope(|scope| {
+            module.init(&lua);
+
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+
+            let test_program = r#"
+                _G.r1 = _dsp_command_handler("shared_exists;test")
+                _G.r2 = _dsp_command_handler("shared_set;test;1.2")
+                _G.r3 = _dsp_command_handler("shared_exists;test")
+                _G.r4 = _dsp_command_handler("shared_get;test")
+                _G.r5 = _dsp_command_handler("shared_get_net;test")
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+
+            let r1 = globals.get::<String>("r1").unwrap();
+            let r2 = globals.get::<String>("r2").unwrap();
+            let r3 = globals.get::<String>("r3").unwrap();
+            let r4 = globals.get::<String>("r4").unwrap();
+            let r5 = globals.get::<String>("r5").unwrap();
+
+            assert_eq!(r1, "false");
+            assert_eq!(r2, NodeType::get_defaults_size().to_string());
+            assert_eq!(r3, "true");
+            assert_eq!(r4, "1.2");
+            assert_eq!(r5, NodeType::get_defaults_size().to_string());
+
+            Ok(())
+        });
+    }
 }
