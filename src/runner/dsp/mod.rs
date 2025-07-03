@@ -246,19 +246,26 @@ impl CommandModule for DspModule {
         let arg_cmd = arg_vec.get(0).expect("No command found\n");
 
         match *arg_cmd {
+            // Shared Commands
             "shared_exists" => {
                 let arg_name = arg_vec.get(1).expect("shared_exists, name not found");
                 return self.shared_exists(&arg_name.to_string()).to_string();
             }
             "shared_set" => {
                 let arg_name = arg_vec.get(1).expect("shared_set, name not found");
-                let arg_value = arg_vec.get(2).expect("shared_set, value not found").parse::<f32>().expect("shared_set, parsing error");
+                let arg_value = arg_vec
+                    .get(2)
+                    .expect("shared_set, value not found")
+                    .parse::<f32>()
+                    .expect("shared_set, parsing error");
 
-                return self.shared_set(&arg_name.to_string(), &arg_value).to_string();
+                return self
+                    .shared_set(&arg_name.to_string(), &arg_value)
+                    .to_string();
             }
             "shared_get" => {
                 let arg_name = arg_vec.get(1).expect("shared_get, name not found");
-                
+
                 let ret = self.shared_get(&arg_name.to_string());
 
                 if ret.is_none() {
@@ -269,7 +276,7 @@ impl CommandModule for DspModule {
             }
             "shared_get_net" => {
                 let arg_name = arg_vec.get(1).expect("shared_get_net, name not found");
-                
+
                 let ret = self.shared_get_net(&arg_name.to_string());
 
                 if ret.is_none() {
@@ -278,12 +285,52 @@ impl CommandModule for DspModule {
                     return ret.unwrap().to_string();
                 }
             }
+            // Net Management Commands
+            "net_exists" => {
+                let arg_id = arg_vec
+                    .get(1)
+                    .expect("net_exists, id not found")
+                    .parse::<usize>()
+                    .expect("net_exists, string conversion");
+
+                return self.net_exists(arg_id).to_string();
+            }
+            "net_clone" => {
+                let arg_id = arg_vec
+                    .get(1)
+                    .expect("net_from, id not found")
+                    .parse::<usize>()
+                    .expect("net_from, string conversion");
+
+                if !self.net_exists(arg_id) {
+                    return "nil".to_string();
+                }
+
+                let net = self.nets[arg_id].clone();
+
+                return self.net_from(&net).to_string();
+            }
+            "net_constant" => {
+                let arg_value = arg_vec
+                    .get(1)
+                    .expect("net_constant, value not found")
+                    .parse::<f32>()
+                    .expect("net_constant, string conversion");
+
+                return self.net_constant(arg_value).to_string();
+            }
+            "net_vector_length" => {
+                return self.net_vector_length().to_string();
+            }
             _ => {
-                panic!("Tried to call command {} which doesn't exist for DSP module", arg_cmd);
+                panic!(
+                    "Tried to call command {} which doesn't exist for DSP module",
+                    arg_cmd
+                );
             }
         }
 
-        return "nil".to_string()
+        return "nil".to_string();
     }
 }
 
@@ -409,7 +456,7 @@ mod tests {
         let globals = lua.globals();
         let module: &mut dyn CommandModule = &mut DspModule::new();
 
-        lua.scope(|scope| {
+        let _ = lua.scope(|scope| {
             module.init(&lua);
 
             lua.globals()
@@ -438,7 +485,7 @@ mod tests {
         let globals = lua.globals();
         let module: &mut dyn CommandModule = &mut DspModule::new();
 
-        lua.scope(|scope| {
+        let _ = lua.scope(|scope| {
             module.init(&lua);
 
             lua.globals()
@@ -447,7 +494,6 @@ mod tests {
                     scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
                 )
                 .expect("Error using command function");
-
 
             let test_program = r#"
                 _G.r1 = _dsp_command_handler("shared_exists;test")
@@ -470,6 +516,48 @@ mod tests {
             assert_eq!(r3, "true");
             assert_eq!(r4, "1.2");
             assert_eq!(r5, NodeType::get_defaults_size().to_string());
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn test_net_management_commands() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut DspModule::new();
+
+        let _ = lua.scope(|scope| {
+            module.init(&lua);
+
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            let test_program = r#"
+                _G.r1 = _dsp_command_handler("net_vector_length")
+                _G.r2 = _dsp_command_handler("net_exists;" .. tostring(_G.r1))
+                _G.r3 = _dsp_command_handler("net_constant;3.3")
+                _G.r4 = _dsp_command_handler("net_exists;" .. tostring(_G.r1))
+                _G.r5 = _dsp_command_handler("net_clone;0")
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+
+            let r1 = globals.get::<String>("r1").unwrap();
+            let r2 = globals.get::<String>("r2").unwrap();
+            let r3 = globals.get::<String>("r3").unwrap();
+            let r4 = globals.get::<String>("r4").unwrap();
+            let r5 = globals.get::<String>("r5").unwrap();
+
+            assert_eq!(r1, NodeType::get_defaults_size().to_string());
+            assert_eq!(r2, "false");
+            assert_eq!(r3, NodeType::get_defaults_size().to_string());
+            assert_eq!(r4, "true");
+            assert_eq!(r5, (NodeType::get_defaults_size() + 1).to_string());
 
             Ok(())
         });
