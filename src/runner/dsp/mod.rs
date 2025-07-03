@@ -285,7 +285,7 @@ impl CommandModule for DspModule {
                     return ret.unwrap().to_string();
                 }
             }
-            // Net Management Commands
+            // Network Management Commands
             "net_exists" => {
                 let arg_id = arg_vec
                     .get(1)
@@ -298,9 +298,9 @@ impl CommandModule for DspModule {
             "net_clone" => {
                 let arg_id = arg_vec
                     .get(1)
-                    .expect("net_from, id not found")
+                    .expect("net_clone, id not found")
                     .parse::<usize>()
-                    .expect("net_from, string conversion");
+                    .expect("net_clone, string conversion");
 
                 if !self.net_exists(arg_id) {
                     return "nil".to_string();
@@ -322,6 +322,91 @@ impl CommandModule for DspModule {
             "net_vector_length" => {
                 return self.net_vector_length().to_string();
             }
+            // Network Proxy Commands
+            "net_default" => {
+                let arg_type = arg_vec.get(1).expect("net_default, type not found");
+
+                return match *arg_type {
+                    "hammond" => NodeType::Hammond.as_net_id().unwrap().to_string(),
+                    "organ" => NodeType::Organ.as_net_id().unwrap().to_string(),
+                    "saw" => NodeType::Saw.as_net_id().unwrap().to_string(),
+                    "sine" => NodeType::Sine.as_net_id().unwrap().to_string(),
+                    "softsaw" => NodeType::SoftSaw.as_net_id().unwrap().to_string(),
+                    "square" => NodeType::Square.as_net_id().unwrap().to_string(),
+                    "triangle" => NodeType::Triangle.as_net_id().unwrap().to_string(),
+                    _ => "nil".to_string(),
+                };
+            }
+            "net_product" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_product, id not found")
+                    .parse::<usize>()
+                    .expect("net_product, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_product, id not found")
+                    .parse::<usize>()
+                    .expect("net_product, string conversion");
+
+                let ret = self.net_product(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
+            "net_bus" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_bus, id not found")
+                    .parse::<usize>()
+                    .expect("net_bus, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_bus, id not found")
+                    .parse::<usize>()
+                    .expect("net_bus, string conversion");
+
+                let ret = self.net_bus(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
+            "net_pipe" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_pipe, id not found")
+                    .parse::<usize>()
+                    .expect("net_pipe, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_pipe, id not found")
+                    .parse::<usize>()
+                    .expect("net_pipe, string conversion");
+
+                let ret = self.net_pipe(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
+            "net_commit" => {
+                let arg_id = arg_vec
+                    .get(1)
+                    .expect("net_commit, id not found")
+                    .parse::<usize>()
+                    .expect("net_commit, string conversion");
+
+                self.net_commit(arg_id);
+            }
+            // Handle bad commands
             _ => {
                 panic!(
                     "Tried to call command {} which doesn't exist for DSP module",
@@ -559,6 +644,69 @@ mod tests {
             assert_eq!(r4, "true");
             assert_eq!(r5, (NodeType::get_defaults_size() + 1).to_string());
 
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn test_net_proxy_commands() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut DspModule::new();
+
+        let _ = lua.scope(|scope| {
+            module.init(&lua);
+
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            // Test defaults
+            let test_program = r#"
+                _G.r1 = _dsp_command_handler("net_default;hammond")
+                _G.r2 = _dsp_command_handler("net_default;organ")
+                _G.r3 = _dsp_command_handler("net_default;saw")
+                _G.r4 = _dsp_command_handler("net_default;sine")
+                _G.r5 = _dsp_command_handler("net_default;softsaw")
+                _G.r6 = _dsp_command_handler("net_default;square")
+                _G.r7 = _dsp_command_handler("net_default;triangle")
+                _G.r8 = _dsp_command_handler("net_default;badinput")
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+
+            let r1 = globals.get::<String>("r1").unwrap();
+            let r2 = globals.get::<String>("r2").unwrap();
+            let r3 = globals.get::<String>("r3").unwrap();
+            let r4 = globals.get::<String>("r4").unwrap();
+            let r5 = globals.get::<String>("r5").unwrap();
+            let r6 = globals.get::<String>("r6").unwrap();
+            let r7 = globals.get::<String>("r7").unwrap();
+            let r8 = globals.get::<String>("r8").unwrap();
+
+            assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
+            assert_eq!(r2, NodeType::Organ.as_net_id().unwrap().to_string());
+            assert_eq!(r3, NodeType::Saw.as_net_id().unwrap().to_string());
+            assert_eq!(r4, NodeType::Sine.as_net_id().unwrap().to_string());
+            assert_eq!(r5, NodeType::SoftSaw.as_net_id().unwrap().to_string());
+            assert_eq!(r6, NodeType::Square.as_net_id().unwrap().to_string());
+            assert_eq!(r7, NodeType::Triangle.as_net_id().unwrap().to_string());
+            assert_eq!(r8, "nil".to_string());
+
+            // Test all other proxys
+            let test_program = r#"
+                _G.r1 = _dsp_command_handler("net_default;hammond")
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+
+            let r1 = globals.get::<String>("r1").unwrap();
+
+            assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
+            
             Ok(())
         });
     }
