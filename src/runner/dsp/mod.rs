@@ -698,14 +698,34 @@ mod tests {
 
             // Test all other proxys
             let test_program = r#"
-                _G.r1 = _dsp_command_handler("net_default;hammond")
+                local constant = _dsp_command_handler("net_constant;2.0")
+                -- Successes
+                _G.r1 = _dsp_command_handler("net_product;0;"..tostring(constant))
+                _G.r2 = _dsp_command_handler("net_bus;1;2")
+                _G.r3 = _dsp_command_handler("net_pipe;1;2")
+                -- Failures
+                _G.r4 = _dsp_command_handler("net_product;1;2")
+                _G.r5 = _dsp_command_handler("net_bus;1;100")
+                _G.r6 = _dsp_command_handler("net_pipe;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
 
             let r1 = globals.get::<String>("r1").unwrap();
+            let r2 = globals.get::<String>("r2").unwrap();
+            let r3 = globals.get::<String>("r3").unwrap();
+            let r4 = globals.get::<String>("r4").unwrap();
+            let r5 = globals.get::<String>("r5").unwrap();
+            let r6 = globals.get::<String>("r6").unwrap();
 
-            assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
+            // Successes
+            assert_eq!(r1, (NodeType::get_defaults_size() + 1).to_string());
+            assert_eq!(r2, (NodeType::get_defaults_size() + 2).to_string());
+            assert_eq!(r3, (NodeType::get_defaults_size() + 3).to_string());
+            // Failures
+            assert_eq!(r4, "nil".to_string());
+            assert_eq!(r5, "nil".to_string());
+            assert_eq!(r6, "nil".to_string());
             
             Ok(())
         });
