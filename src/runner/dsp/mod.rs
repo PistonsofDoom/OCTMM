@@ -60,11 +60,6 @@ impl NodeType {
             Net::wrap(NodeType::Triangle.as_unit()),
         ])
     }
-
-    /// Hard-coded value of the "get_defaults()" vector size
-    pub fn get_defaults_size() -> usize {
-        NodeType::get_defaults().len()
-    }
 }
 
 pub struct DspModule {
@@ -463,7 +458,7 @@ mod tests {
     pub fn test_net_management() {
         let mut dsp = DspModule::new();
 
-        let default_length: usize = NodeType::get_defaults_size();
+        let default_length: usize = NodeType::get_defaults().len();
 
         assert_eq!(dsp.net_vector_length(), default_length);
 
@@ -626,10 +621,10 @@ mod tests {
             let r5 = globals.get::<String>("r5").unwrap();
 
             assert_eq!(r1, "false");
-            assert_eq!(r2, NodeType::get_defaults_size().to_string());
+            assert_eq!(r2, NodeType::get_defaults().len().to_string());
             assert_eq!(r3, "true");
             assert_eq!(r4, "1.2");
-            assert_eq!(r5, NodeType::get_defaults_size().to_string());
+            assert_eq!(r5, NodeType::get_defaults().len().to_string());
 
             Ok(())
         });
@@ -667,11 +662,11 @@ mod tests {
             let r4 = globals.get::<String>("r4").unwrap();
             let r5 = globals.get::<String>("r5").unwrap();
 
-            assert_eq!(r1, NodeType::get_defaults_size().to_string());
+            assert_eq!(r1, NodeType::get_defaults().len().to_string());
             assert_eq!(r2, "false");
-            assert_eq!(r3, NodeType::get_defaults_size().to_string());
+            assert_eq!(r3, NodeType::get_defaults().len().to_string());
             assert_eq!(r4, "true");
-            assert_eq!(r5, (NodeType::get_defaults_size() + 1).to_string());
+            assert_eq!(r5, (NodeType::get_defaults().len() + 1).to_string());
 
             Ok(())
         });
@@ -748,9 +743,9 @@ mod tests {
             let r6 = globals.get::<String>("r6").unwrap();
 
             // Successes
-            assert_eq!(r1, (NodeType::get_defaults_size() + 1).to_string());
-            assert_eq!(r2, (NodeType::get_defaults_size() + 2).to_string());
-            assert_eq!(r3, (NodeType::get_defaults_size() + 3).to_string());
+            assert_eq!(r1, (NodeType::get_defaults().len() + 1).to_string());
+            assert_eq!(r2, (NodeType::get_defaults().len() + 2).to_string());
+            assert_eq!(r3, (NodeType::get_defaults().len() + 3).to_string());
             // Failures
             assert_eq!(r4, "nil".to_string());
             assert_eq!(r5, "nil".to_string());
