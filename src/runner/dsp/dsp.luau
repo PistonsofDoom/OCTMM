@@ -1,11 +1,5 @@
 -- Constants
 
--- Metatables
-
-local Shared = {
-
-}
-
 -- Initialize Globals
 _G.DSP = {}
 
@@ -14,6 +8,11 @@ _G.DSP = {}
 -- Shared Commands
 local function sharedExists(name: String)
 	return _dsp_command_handler("shared_exists;"..name) == "true"
+end
+
+local function sharedSetValue(name: String, value: Number)
+	local ret = _dsp_command_handler("shared_set;"..name..";"..tostring(value))
+	return tonumber(ret)
 end
 
 local function sharedGetValue(name: String)
@@ -103,4 +102,86 @@ end
 local function netCommit(id: Number)
 	_dsp_command_handler("net_commit;"..id)
 end
+
 -- Global Functions
+
+-- Metatables
+
+Net = {}
+Net._mt = {}
+-- Contains:
+-- 		_net_id: Number
+
+-- Metamethods
+-- Bus two networks together
+function Net._mt.__add(a, b)
+	return Net.from(netBus(a._net_id, b._net_id))
+end
+
+function Net._mt.__mul(a, b)
+	return Net.from(netProduct(a._net_id, b._net_id))
+end
+
+function Net._mt.__concat(a, b)
+	return Net.from(netPipe(a._net_id, b._net_id))
+end
+
+-- User facing functions
+function Net.from(net_id: Number)
+	local new_net = {}
+
+	setmetatable(new_net, Net._mt)
+	new_net._net_id = net_id
+
+	return new_net
+end
+
+Shared = {}
+Shared._mt = {}
+-- Contains:
+-- 		_net_id: Number
+-- 		_name: String
+-- 		_value: Number
+
+-- Metamethods
+function Shared._mt.__add(a, b)
+	return Net.from(netBus(a._net_id, b._net_id))
+end
+
+function Shared._mt.__mul(a, b)
+	return Net.from(netProduct(a._net_id, b._net_id))
+end
+
+-- Set a value on a shared variable by calling
+-- my_shared_variable(200)
+function Shared._mt.__call(table, value:Number)
+	table._value = value
+	sharedSetValue(table._name, table._value)
+end
+
+-- Get current value of a shared variable
+-- local value = #my_shared_variable
+function Shared._mt.__len(table)
+	return table._value
+end
+
+-- User facing functions
+function Shared.new(name:String , value:Number)
+	local new_shared = {}
+
+	setmetatable(new_shared, Shared._mt)
+	new_shared._name = name
+	new_shared._value = value
+	new_shared._net_id = sharedSetValue(name, value)
+
+	return new_shared
+end
+
+-- Setup Defaults 
+_G.Hammond = Net.from(netDefault("hammond"))
+_G.Organ = Net.from(netDefault("organ"))
+_G.Saw = Net.from(netDefault("saw"))
+_G.Sine = Net.from(netDefault("sine"))
+_G.SoftSaw = Net.from(netDefault("softsaw"))
+_G.Square = Net.from(netDefault("square"))
+_G.Triangle = Net.from(netDefault("triangle"))

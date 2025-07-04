@@ -189,12 +189,22 @@ impl DspModule {
         let net_a = self.nets[target_a].clone();
         let net_b = self.nets[target_b].clone();
 
+        // When using constants / shared, the "input" count is 0.
+        // So just do a sum instead, this gives intended behavior.
+        if self.nets[target_a].inputs() == 0 || self.nets[target_b].inputs() == 0 {
+            if !Net::can_sum(&net_a, &net_b) {
+                return None;
+            }
+
+            let new_network = Net::sum(net_a, net_b);
+            return Some(self.net_from(&new_network));
+        }
+
         if !Net::can_bus(&net_a, &net_b) {
             return None;
         }
 
         let new_network = Net::bus(net_a, net_b);
-
         Some(self.net_from(&new_network))
     }
 
@@ -541,6 +551,8 @@ mod tests {
         let module: &mut dyn CommandModule = &mut DspModule::new();
 
         let _ = lua.scope(|scope| {
+            let post_init_program = module.get_post_init_program(&lua);
+
             module.init(&lua);
 
             lua.globals()
@@ -550,13 +562,25 @@ mod tests {
                 )
                 .expect("Error using command function");
 
-            /*let test_program = r#"
-                _dsp_command_handler("command type;arg 2; arg3")
+            lua.load(post_init_program.unwrap())
+                .exec()
+                .expect("Failed to load post init on module, got\n");
+
+            // NOTE: future improvement could be to check whether
+            // it correctly created the modulator
+            let test_program = r#"
+                local f = Shared.new("freq", 420)
+                local m = Shared.new("modulator", 1.0)
+
+                local fm_synth = ((f..Sine) * f * m) + f..Sine
+                local operation_test = (Sine + f)..(Sine + Saw)
+
+                _G.SUCCESS = typeof(fm_synth._net_id) == "number" and typeof(operation_test._net_id) == "number"
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
             assert!(globals.get::<bool>("SUCCESS").is_ok());
-            assert!(globals.get::<bool>("SUCCESS").unwrap());*/
+            assert!(globals.get::<bool>("SUCCESS").unwrap());
 
             Ok(())
         });
