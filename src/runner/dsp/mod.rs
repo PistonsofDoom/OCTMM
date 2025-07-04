@@ -6,6 +6,8 @@ use std::collections::HashMap;
 const LUA_MODULE: &str = include_str!("dsp.luau");
 
 #[derive(Debug)]
+/// Used to describe the applicable "base components" that we want to use
+/// Contains oscillators, noise (todo), and filters
 pub enum NodeType {
     // Oscillators
     Hammond,
@@ -61,13 +63,16 @@ impl NodeType {
 
     /// Hard-coded value of the "get_defaults()" vector size
     pub fn get_defaults_size() -> usize {
-        7
+        NodeType::get_defaults().len()
     }
 }
 
 pub struct DspModule {
+    // Contains all the DSP networks used within the module
     nets: Vec<Net>,
+    // Contains all fundsp Shared variables, mapped to a unique name
     shared: HashMap<String, Shared>,
+    // Contains a map of unique shared names to network ids
     shared_to_net: HashMap<String, usize>,
 }
 
@@ -87,7 +92,7 @@ impl DspModule {
         return self.shared.contains_key(name);
     }
 
-    /// Set a shared value
+    /// Set or create a new shared value
     pub fn shared_set(&mut self, name: &String, value: &f32) -> usize {
         let entry = self.shared_get(name);
 
@@ -130,7 +135,7 @@ impl DspModule {
         return target < self.nets.len();
     }
 
-    /// Create a new network entry from a new network
+    /// Create a new network entry from a network
     pub fn net_from(&mut self, new_network: &Net) -> usize {
         self.nets.push(new_network.clone());
         return self.nets.len() - 1;
@@ -146,7 +151,7 @@ impl DspModule {
         return Some(target);
     }
 
-    /// Create a new network that is a constant of the value
+    /// Create a new network that contains a constant of the given value 
     // NOTE: possible "optimization" by caching constants
     pub fn net_constant(&mut self, value: f32) -> usize {
         self.net_from(&Net::wrap(Box::new(constant(value))))
@@ -181,6 +186,8 @@ impl DspModule {
         Some(self.net_from(&new_network))
     }
 
+    /// Buses two networks together. If one or more of the networks have 0 inputs, they are
+    /// summed instead
     pub fn net_bus(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
         if !self.net_exists(target_a) || !self.net_exists(target_b) {
             return None;
@@ -251,7 +258,6 @@ impl CommandModule for DspModule {
     }
     fn command(&mut self, lua: &Lua, arg: &String) -> String {
         let arg_vec: Vec<&str> = arg.split(';').collect();
-
         let arg_cmd = arg_vec.get(0).expect("No command found\n");
 
         match *arg_cmd {
