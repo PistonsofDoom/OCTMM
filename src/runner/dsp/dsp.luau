@@ -115,7 +115,6 @@ Net._mt = {}
 -- 		_net_id: Number
 
 -- Metamethods
--- Bus two networks together
 function Net._mt.__add(a, b)
 	return Net.from(netBus(a._net_id, b._net_id))
 end
@@ -141,6 +140,12 @@ end
 --	Constant
 --		Used to house a utility function for creating
 --		constant networks
+--		
+--		Example:
+--			local my_constant = Constant.new(440)
+--
+--			local my_synth = my_constant..Sine
+--
 Constant = {}
 function Constant.new(value: Number)
 	return Net.from(netConstant(value))
