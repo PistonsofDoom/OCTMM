@@ -570,7 +570,7 @@ mod tests {
             // it correctly created the modulator
             let test_program = r#"
                 local f = Shared.new("freq", 420)
-                local m = Shared.new("modulator", 1.0)
+                local m = Constant.new(0.5)
 
                 local fm_synth = ((f..Sine) * f * m) + f..Sine
                 local operation_test = (Sine + f)..(Sine + Saw)

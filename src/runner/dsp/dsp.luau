@@ -136,6 +136,11 @@ function Net.from(net_id: Number)
 	return new_net
 end
 
+Constant = {}
+function Constant.new(value: Number)
+	return Net.from(netConstant(value))
+end
+
 Shared = {}
 Shared._mt = {}
 -- Contains:
