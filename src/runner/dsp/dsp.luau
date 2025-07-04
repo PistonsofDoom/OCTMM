@@ -1,9 +1,4 @@
--- Constants
-
--- Initialize Globals
-_G.DSP = {}
-
--- Local Utility Functions
+-- Local Utility Functions --
 
 -- Shared Commands
 local function sharedExists(name: String)
@@ -103,10 +98,17 @@ local function netCommit(id: Number)
 	_dsp_command_handler("net_commit;"..id)
 end
 
--- Global Functions
+-- Metatables --
 
--- Metatables
-
+--	Net
+--		Serves as a sort of "proxy" for the rust
+--		DSP module's 'net' utility functions.
+--
+--		Arithmetic:
+--			net1 + net2  - Bus
+--			net1 * net2  - Product
+--			net1 .. net2 - Pipe
+--
 Net = {}
 Net._mt = {}
 -- Contains:
@@ -136,11 +138,35 @@ function Net.from(net_id: Number)
 	return new_net
 end
 
+--	Constant
+--		Used to house a utility function for creating
+--		constant networks
 Constant = {}
 function Constant.new(value: Number)
 	return Net.from(netConstant(value))
 end
 
+--	Shared
+--		Kind of like an extension of a Net, but with utility functions
+--		for setting & getting Shared values
+--		
+--		Arithmetic:
+--			shared + shared
+--			shared + constant
+--			net + shared
+--			
+--			shared * shared
+--			shared * constant
+--			net * shared
+--		NOT	shared * net
+--
+--		Example:
+--			local my_shared = Shared.new("my_shared", 20)
+--
+--			my_shared(#my_shared + 20)
+--
+--			print(#my_shared) -- Prints 40
+--
 Shared = {}
 Shared._mt = {}
 -- Contains:
@@ -182,7 +208,7 @@ function Shared.new(name:String , value:Number)
 	return new_shared
 end
 
--- Setup Defaults 
+-- Setup Defaults --
 _G.Hammond = Net.from(netDefault("hammond"))
 _G.Organ = Net.from(netDefault("organ"))
 _G.Saw = Net.from(netDefault("saw"))

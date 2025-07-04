@@ -573,7 +573,7 @@ mod tests {
                 local m = Constant.new(0.5)
 
                 local fm_synth = ((f..Sine) * f * m) + f..Sine
-                local operation_test = (Sine + f)..(Sine + Saw)
+                local operation_test = (Sine + f)..(Sine + Saw)..(f + Sine) + (f * m)
 
                 _G.SUCCESS = typeof(fm_synth._net_id) == "number" and typeof(operation_test._net_id) == "number"
             "#;
