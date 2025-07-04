@@ -8,6 +8,7 @@ pub trait CommandModule {
     fn init(&mut self, lua: &Lua);
     fn end(&mut self, lua: &Lua);
 
+    fn get_post_init_program(&self, lua: &Lua) -> Option<String>;
     fn get_command_name(&self) -> String;
     fn command(&mut self, lua: &Lua, arg: &String) -> String;
 }
@@ -47,6 +48,8 @@ impl Runner {
             }
 
             for module in &mut self.command_modules {
+                let post_init_program = module.get_post_init_program(&self.lua);
+
                 module.init(&self.lua);
 
                 self.lua
@@ -58,6 +61,13 @@ impl Runner {
                         })?,
                     )
                     .expect("Error using command function");
+
+                if post_init_program.is_some() {
+                    self.lua
+                        .load(post_init_program.unwrap())
+                        .exec()
+                        .expect("Failed to load post init on module, got\n")
+                }
             }
 
             // Load user program

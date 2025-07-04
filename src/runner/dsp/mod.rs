@@ -230,13 +230,12 @@ impl DspModule {
 }
 
 impl CommandModule for DspModule {
-    fn init(&mut self, lua: &Lua) {
-        lua.load(LUA_MODULE)
-            .exec()
-            .expect("Failed to load DSP module, got\n");
-    }
+    fn init(&mut self, _lua: &Lua) {}
     fn end(&mut self, _lua: &Lua) {}
 
+    fn get_post_init_program(&self, lua: &Lua) -> Option<String> {
+        Some(LUA_MODULE.to_string())
+    }
     fn get_command_name(&self) -> String {
         "_dsp_command_handler".to_string()
     }
@@ -726,7 +725,7 @@ mod tests {
             assert_eq!(r4, "nil".to_string());
             assert_eq!(r5, "nil".to_string());
             assert_eq!(r6, "nil".to_string());
-            
+
             Ok(())
         });
     }
