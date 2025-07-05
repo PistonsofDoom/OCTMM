@@ -5,17 +5,25 @@ mod dsp;
 mod timer;
 
 pub trait CommandModule {
+    /// Ran before runtime, and before commands are binded
     fn init(&mut self, lua: &Lua);
+    /// Ran after runtime
     fn end(&mut self, lua: &Lua);
 
+    /// Optionally, return a string referring to a lua program to run after commands are setup
     fn get_post_init_program(&self, lua: &Lua) -> Option<String>;
+    /// Return a String that refers to the lua global the command() rust function should be binded to
     fn get_command_name(&self) -> String;
+    /// Function that gets binded to a lua global
     fn command(&mut self, lua: &Lua, arg: &String) -> String;
 }
 
 pub trait PollingModule {
+    /// Ran before runtime
     fn init(&mut self, lua: &Lua);
+    /// Ran every 'tick' during runtime
     fn update(&mut self, time: &f64, lua: &Lua);
+    /// Ran after runtime
     fn end(&mut self, lua: &Lua);
 }
 
