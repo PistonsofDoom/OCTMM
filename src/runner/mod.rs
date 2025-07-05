@@ -1,5 +1,5 @@
 use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
-use mlua::{Lua, Scope, Table};
+use mlua::Lua;
 
 mod dsp;
 mod timer;
@@ -11,7 +11,7 @@ pub trait CommandModule {
     fn end(&mut self, lua: &Lua);
 
     /// Optionally, return a string referring to a lua program to run after commands are setup
-    fn get_post_init_program(&self, lua: &Lua) -> Option<String>;
+    fn get_post_init_program(&self) -> Option<String>;
     /// Return a String that refers to the lua global the command() rust function should be binded to
     fn get_command_name(&self) -> String;
     /// Function that gets binded to a lua global
@@ -49,14 +49,14 @@ impl Runner {
 
     /// Load the program and run it
     pub fn run(&mut self) {
-        self.lua.scope(|scope| {
+        let _ = self.lua.scope(|scope| {
             // Initialize all internal modules
             for module in &mut self.polling_modules {
                 module.init(&self.lua);
             }
 
             for module in &mut self.command_modules {
-                let post_init_program = module.get_post_init_program(&self.lua);
+                let post_init_program = module.get_post_init_program();
 
                 module.init(&self.lua);
 

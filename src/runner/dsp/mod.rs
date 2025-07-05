@@ -245,13 +245,13 @@ impl CommandModule for DspModule {
     fn init(&mut self, _lua: &Lua) {}
     fn end(&mut self, _lua: &Lua) {}
 
-    fn get_post_init_program(&self, lua: &Lua) -> Option<String> {
+    fn get_post_init_program(&self) -> Option<String> {
         Some(LUA_MODULE.to_string())
     }
     fn get_command_name(&self) -> String {
         "_dsp_command_handler".to_string()
     }
-    fn command(&mut self, lua: &Lua, arg: &String) -> String {
+    fn command(&mut self, _lua: &Lua, arg: &String) -> String {
         let arg_vec: Vec<&str> = arg.split(';').collect();
         let arg_cmd = arg_vec.get(0).expect("No command found\n");
 
@@ -432,7 +432,7 @@ impl CommandModule for DspModule {
 #[cfg(test)]
 mod tests {
     use super::{DspModule, NodeType};
-    use crate::runner::{CommandModule, dsp};
+    use crate::runner::CommandModule;
     use fundsp::hacker32::*;
     use mlua::Lua;
 
@@ -557,7 +557,7 @@ mod tests {
         let module: &mut dyn CommandModule = &mut DspModule::new();
 
         let _ = lua.scope(|scope| {
-            let post_init_program = module.get_post_init_program(&lua);
+            let post_init_program = module.get_post_init_program();
 
             module.init(&lua);
 
