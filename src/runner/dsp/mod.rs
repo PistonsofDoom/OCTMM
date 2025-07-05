@@ -478,9 +478,6 @@ mod tests {
         assert!(dsp.net_exists(default_length + 1));
 
         // Test net_replace
-        // TODO: make this actually test whether or not
-        // the network was replaced
-
         // Should fail, as network doesn't exist here
         assert!(
             dsp.net_replace(default_length + 2, &Net::new(5, 5))
@@ -493,7 +490,6 @@ mod tests {
         );
 
         // Test net_constant
-        // TODO: test value of constant?
         assert_eq!(dsp.net_constant(12.3), default_length + 2);
     }
 
