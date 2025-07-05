@@ -235,7 +235,7 @@ impl DspModule {
     }
 
     pub fn net_commit(&mut self, target_net: usize) {
-        if self.net_exists(target_net) {
+        if self.net_exists(target_net) && self.nets[target_net].has_backend() {
             self.nets[target_net].commit();
         }
     }
