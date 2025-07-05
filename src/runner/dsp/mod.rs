@@ -576,8 +576,8 @@ mod tests {
                 .exec()
                 .expect("Failed to load post init on module, got\n");
 
-            // NOTE: future improvement could be to check whether
-            // it correctly created the modulator
+            // NOTE: Improvement could be to check the result to make sure the digital signal
+            // network was created correctly
             let test_program = r#"
                 local f = Shared.new("freq", 420)
                 local m = Constant.new(0.5)
