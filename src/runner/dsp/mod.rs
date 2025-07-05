@@ -533,6 +533,15 @@ mod tests {
         let my_network = dsp.net_bus(my_network.unwrap(), saw);
         assert!(my_network.is_some());
 
+        let my_network = dsp.net_bus(constant, my_shared);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_bus(constant, constant);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_bus(sine, my_shared);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_bus(my_shared, sine);
+        assert!(my_network.is_some());
+
         // Test net_pipe
         let my_network = dsp.net_pipe(my_network.unwrap(), sine);
         assert!(my_network.is_some());
