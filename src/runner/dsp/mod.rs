@@ -579,9 +579,15 @@ mod tests {
                 local m = Constant.new(0.5)
 
                 local fm_synth = ((f..Sine) * f * m) + f..Sine
+                local cloned = Net.clone(fm_synth)
                 local operation_test = (Sine + f)..(Sine + Saw)..(f + Sine) + (f * m)
 
-                _G.SUCCESS = typeof(fm_synth._net_id) == "number" and typeof(operation_test._net_id) == "number"
+                local success = typeof(fm_synth._net_id) == "number" and 
+                                typeof(operation_test._net_id) == "number" and 
+                                cloned ~= nil and 
+                                cloned._net_id ~= fm_synth._net_id
+
+                _G.SUCCESS = success
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());

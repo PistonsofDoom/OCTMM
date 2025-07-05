@@ -137,6 +137,14 @@ function Net.from(net_id: Number)
 	return new_net
 end
 
+function Net.clone(network)
+	if not network._net_id then
+		return nil
+	end
+
+	return Net.from(netClone(network._net_id))
+end
+
 --	Constant
 --		Used to house a utility function for creating
 --		constant networks
