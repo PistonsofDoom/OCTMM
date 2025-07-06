@@ -125,12 +125,12 @@ impl DspModule {
     // This shouldn't create problems if the user program is written correctly, however if "voices"
     // are generated on the fly, rather than pre-generated, this could become a problem.
 
-    /// Check whether or an a network entry exists at the target index
+    /// Check whether a network entry exists at the target index
     pub fn net_exists(&mut self, target: usize) -> bool {
         return target < self.nets.len();
     }
 
-    /// Create a new network entry from a network
+    /// Create a new network entry from a Net reference
     pub fn net_from(&mut self, new_network: &Net) -> usize {
         self.nets.push(new_network.clone());
         return self.nets.len() - 1;
@@ -147,7 +147,6 @@ impl DspModule {
     }
 
     /// Create a new network that contains a constant of the given value 
-    // NOTE: possible "optimization" by caching constants
     pub fn net_constant(&mut self, value: f32) -> usize {
         self.net_from(&Net::wrap(Box::new(constant(value))))
     }
