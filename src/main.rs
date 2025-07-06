@@ -35,7 +35,7 @@ fn main() {
             }
 
             let project = Project::load(&path).expect("Couldn't load project");
-            let runner = Runner::new(project);
+            let mut runner = Runner::new(project);
 
             runner.run();
         }

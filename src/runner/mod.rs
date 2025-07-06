@@ -1,19 +1,38 @@
-use crate::{project::Project, runner::timer::TimerModule};
-use mlua::*;
+use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
+use mlua::Lua;
 
+mod dsp;
 mod timer;
 
-pub trait Module {
-    fn init(&self, lua: &Lua);
-    fn update(&self, time: &f64, lua: &Lua);
-    fn end(&self, lua: &Lua);
+pub trait CommandModule {
+    /// Ran before runtime, and before commands are binded
+    fn init(&mut self, lua: &Lua);
+    /// Ran after runtime
+    fn end(&mut self, lua: &Lua);
+
+    /// Optionally, return a string referring to a lua program to run after commands are setup
+    fn get_post_init_program(&self) -> Option<String>;
+    /// Return a String that refers to the lua global the command() rust function should be binded to
+    fn get_command_name(&self) -> String;
+    /// Function that gets binded to a lua global
+    fn command(&mut self, lua: &Lua, arg: &String) -> String;
+}
+
+pub trait PollingModule {
+    /// Ran before runtime
+    fn init(&mut self, lua: &Lua);
+    /// Ran every 'tick' during runtime
+    fn update(&mut self, time: &f64, lua: &Lua);
+    /// Ran after runtime
+    fn end(&mut self, lua: &Lua);
 }
 
 pub struct Runner {
     project: Project,
     now: std::time::Instant,
     lua: Lua,
-    modules: [Box<dyn Module>; 1],
+    command_modules: [Box<dyn CommandModule>; 1],
+    polling_modules: [Box<dyn PollingModule>; 1],
 }
 
 impl Runner {
@@ -23,48 +42,80 @@ impl Runner {
             project: project,
             now: std::time::Instant::now(),
             lua: Lua::new(),
-            modules: [Box::new(TimerModule::new())],
+            command_modules: [Box::new(DspModule::new())],
+            polling_modules: [Box::new(TimerModule::new())],
         }
     }
 
     /// Load the program and run it
-    pub fn run(&self) {
-        // Initialize all internal modules
-        for module in &self.modules {
-            module.init(&self.lua);
-        }
-
-        // Load user program
-        self.lua
-            .load(self.project.get_program())
-            .exec()
-            .expect("Failed to load user program, got\n");
-
-        // Initiate program loop
-        let globals = self.lua.globals();
-        // Compensate for long initilizations
-        let start_millis = self.now.elapsed().as_millis();
-
-        loop {
-            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
-
-            // Update all internal modules
-            for module in &self.modules {
-                module.update(&time_passed, &self.lua);
+    pub fn run(&mut self) {
+        let _ = self.lua.scope(|scope| {
+            // Initialize all internal modules
+            for module in &mut self.polling_modules {
+                module.init(&self.lua);
             }
 
-            // Check if we should end the song
-            let end_song: bool = globals.get("EndSong").unwrap_or(false);
-            if end_song {
-                break;
+            for module in &mut self.command_modules {
+                let post_init_program = module.get_post_init_program();
+
+                module.init(&self.lua);
+
+                self.lua
+                    .globals()
+                    .set(
+                        module.get_command_name(),
+                        scope.create_function_mut(|_, arg: String| {
+                            Ok(module.command(&self.lua, &arg))
+                        })?,
+                    )
+                    .expect("Error using command function");
+
+                if post_init_program.is_some() {
+                    self.lua
+                        .load(post_init_program.unwrap())
+                        .exec()
+                        .expect("Failed to load post init on module, got\n")
+                }
             }
 
-            // Give the CPU a lil snooze
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        }
+            // Load user program
+            self.lua
+                .load(self.project.get_program())
+                .exec()
+                .expect("Failed to load user program, got\n");
 
-        // Call 'end' on all internal modules
-        for module in &self.modules {
+            // Initiate program loop
+            let globals = self.lua.globals();
+            // Compensate for long initilizations
+            let start_millis = self.now.elapsed().as_millis();
+
+            loop {
+                let time_passed: f64 =
+                    (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+
+                // Update all internal modules
+                for module in &mut self.polling_modules {
+                    module.update(&time_passed, &self.lua);
+                }
+
+                // Check if we should end the song
+                let end_song: bool = globals.get("EndSong").unwrap_or(false);
+                if end_song {
+                    break;
+                }
+
+                // Give the CPU a lil snooze
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+
+            // Call 'end' on all internal modules
+            Ok(())
+        });
+
+        for module in &mut self.polling_modules {
+            module.end(&self.lua);
+        }
+        for module in &mut self.command_modules {
             module.end(&self.lua);
         }
     }
@@ -101,7 +152,7 @@ mod tests {
         let project = Project::load(&proj_dir).expect("Failed to load project");
 
         // Test Runner
-        let runner = Runner::new(project);
+        let mut runner = Runner::new(project);
 
         runner.run();
     }
