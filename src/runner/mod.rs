@@ -1,7 +1,7 @@
-use crate::{project::Project, runner::dsp::DspModule, runner::timer::TimerModule};
+use crate::{project::Project, runner::audio::AudioModule, runner::timer::TimerModule};
 use mlua::Lua;
 
-mod dsp;
+mod audio;
 mod timer;
 
 pub trait CommandModule {
@@ -42,7 +42,7 @@ impl Runner {
             project: project,
             now: std::time::Instant::now(),
             lua: Lua::new(),
-            command_modules: [Box::new(DspModule::new())],
+            command_modules: [Box::new(AudioModule::new())],
             polling_modules: [Box::new(TimerModule::new())],
         }
     }

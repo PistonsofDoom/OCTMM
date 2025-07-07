@@ -2,16 +2,16 @@
 
 -- Shared Commands
 local function sharedExists(name: String)
-	return _dsp_command_handler("shared_exists;"..name) == "true"
+	return _audio_command_handler("dsp;shared_exists;"..name) == "true"
 end
 
 local function sharedSetValue(name: String, value: Number)
-	local ret = _dsp_command_handler("shared_set;"..name..";"..tostring(value))
+	local ret = _audio_command_handler("dsp;shared_set;"..name..";"..tostring(value))
 	return tonumber(ret)
 end
 
 local function sharedGetValue(name: String)
-	local ret = _dsp_command_handler("shared_get;"..name)
+	local ret = _audio_command_handler("dsp;shared_get;"..name)
 
 	if ret == "nil" then
 		return nil
@@ -21,7 +21,7 @@ local function sharedGetValue(name: String)
 end
 
 local function sharedGetNet(name: String)
-	local ret = _dsp_command_handler("shared_get_net;"..name)
+	local ret = _audio_command_handler("dsp;shared_get_net;"..name)
 
 	if ret == "nil" then
 		return nil
@@ -32,11 +32,11 @@ end
 
 -- Network Management Commands
 local function netExists(id: Number)
-	return _dsp_command_handler("net_exists;"..tostring(id)) == "true"
+	return _audio_command_handler("dsp;net_exists;"..tostring(id)) == "true"
 end
 
 local function netClone(id: Number)
-	local ret = _dsp_command_handler("net_clone;"..tostring(id))
+	local ret = _audio_command_handler("dsp;net_clone;"..tostring(id))
 
 	if ret == "nil" then
 		return nil
@@ -46,16 +46,16 @@ local function netClone(id: Number)
 end
 
 local function netConstant(value: Number)
-	return _dsp_command_handler("net_constant;"..tostring(value))
+	return _audio_command_handler("dsp;net_constant;"..tostring(value))
 end
 
 local function netVectorLength()
-	return _dsp_command_handler("net_vector_length")
+	return _audio_command_handler("dsp;net_vector_length")
 end
 
 -- Network Proxy Commands
 local function netDefault(node_type: String)
-	local ret = _dsp_command_handler("net_default;"..node_type)
+	local ret = _audio_command_handler("dsp;net_default;"..node_type)
 
 	if ret == "nil" then
 		return nil
@@ -65,7 +65,7 @@ local function netDefault(node_type: String)
 end
 
 local function netProduct(id1: Number, id2: Number)
-	local ret = _dsp_command_handler("net_product;"..tostring(id1)..";"..tostring(id2))
+	local ret = _audio_command_handler("dsp;net_product;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
 		return nil
@@ -75,7 +75,7 @@ local function netProduct(id1: Number, id2: Number)
 end
 
 local function netBus(id1: Number, id2: Number)
-	local ret = _dsp_command_handler("net_bus;"..tostring(id1)..";"..tostring(id2))
+	local ret = _audio_command_handler("dsp;net_bus;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
 		return nil
@@ -85,7 +85,7 @@ local function netBus(id1: Number, id2: Number)
 end
 
 local function netPipe(id1: Number, id2: Number)
-	local ret = _dsp_command_handler("net_pipe;"..tostring(id1)..";"..tostring(id2))
+	local ret = _audio_command_handler("dsp;net_pipe;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
 		return nil
@@ -95,7 +95,7 @@ local function netPipe(id1: Number, id2: Number)
 end
 
 local function netCommit(id: Number)
-	_dsp_command_handler("net_commit;"..id)
+	_audio_command_handler("dsp;net_commit;"..id)
 end
 
 -- Metatables --
