@@ -126,7 +126,7 @@ impl DspModule {
     // are generated on the fly, rather than pre-generated, this could become a problem.
 
     /// Check whether a network entry exists at the target index
-    pub fn net_exists(&mut self, target: usize) -> bool {
+    pub fn net_exists(&self, target: usize) -> bool {
         return target < self.nets.len();
     }
 
@@ -144,6 +144,14 @@ impl DspModule {
 
         self.nets[target] = new_network.clone();
         return Some(target);
+    }
+
+    pub fn get_net(&self, target: usize) -> Option<Net> {
+        if !self.net_exists(target) {
+            return None;
+        }
+
+        return Some(self.nets[target].clone());
     }
 
     /// Create a new network that contains a constant of the given value
@@ -476,6 +484,9 @@ mod tests {
         let id2 = dsp.net_from(&Net::new(0, 4));
         assert_eq!(id2, default_length + 1);
         assert!(dsp.net_exists(default_length + 1));
+
+        assert!(dsp.get_net(default_length + 200).is_none());
+        assert!(dsp.get_net(default_length + 1).is_some());
 
         // Test net_replace
         // Should fail, as network doesn't exist here
