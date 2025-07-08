@@ -10,6 +10,8 @@ pub struct AudioModule {
 }
 
 impl AudioModule {
+    // TODO: When audio export is implemented, add inputs
+    // for mode & bitrate.
     pub fn new() -> AudioModule {
         AudioModule {
             dsp: DspModule::new(),
@@ -20,6 +22,9 @@ impl AudioModule {
 impl CommandModule for AudioModule {
     fn init(&mut self, lua: &Lua) {
         self.dsp.init(lua);
+    }
+    fn update(&mut self, time: &f64, lua: &Lua) {
+        self.dsp.update(time, lua);
     }
     fn end(&mut self, lua: &Lua) {
         self.dsp.end(lua);

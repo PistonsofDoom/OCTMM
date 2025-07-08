@@ -7,6 +7,8 @@ mod timer;
 pub trait CommandModule {
     /// Ran before runtime, and before commands are binded
     fn init(&mut self, lua: &Lua);
+    /// Ran every 'tick' during runtime
+    fn update(&mut self, time: &f64, lua: &Lua);
     /// Ran after runtime
     fn end(&mut self, lua: &Lua);
 
@@ -49,6 +51,7 @@ impl Runner {
 
     /// Load the program and run it
     pub fn run(&mut self) {
+        // Scope for initilization
         let _ = self.lua.scope(|scope| {
             // Initialize all internal modules
             for module in &mut self.polling_modules {
@@ -84,34 +87,60 @@ impl Runner {
                 .exec()
                 .expect("Failed to load user program, got\n");
 
-            // Initiate program loop
-            let globals = self.lua.globals();
-            // Compensate for long initilizations
-            let start_millis = self.now.elapsed().as_millis();
+            // End scope
+            Ok(())
+        });
 
-            loop {
-                let time_passed: f64 =
-                    (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+        // Initiate program loop
+        let globals = self.lua.globals();
+        // Compensate for long initilizations
+        let start_millis = self.now.elapsed().as_millis();
 
-                // Update all internal modules
+        loop {
+            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+
+            // Command update functions
+            for module in &mut self.command_modules {
+                module.update(&time_passed, &self.lua);
+            }
+
+            // Scope so user can call callback functions
+            // NOTE: I don't like doing this, but it allows us to call an update() function on all
+            // command modules, while still allowing proper callbacks.
+            let _ = self.lua.scope(|scope| {
+                for module in &mut self.command_modules {
+                    self.lua
+                        .globals()
+                        .set(
+                            module.get_command_name(),
+                            scope.create_function_mut(|_, arg: String| {
+                                Ok(module.command(&self.lua, &arg))
+                            })?,
+                            )
+                        .expect("Error using command function");
+                }
+
+                // Update all polling modules
                 for module in &mut self.polling_modules {
                     module.update(&time_passed, &self.lua);
                 }
 
-                // Check if we should end the song
-                let end_song: bool = globals.get("EndSong").unwrap_or(false);
-                if end_song {
-                    break;
-                }
+                // End scope
+                Ok(())
+            });
 
-                // Give the CPU a lil snooze
-                std::thread::sleep(std::time::Duration::from_millis(1));
+            // Check if we should end the song
+            let end_song: bool = globals.get("EndSong").unwrap_or(false);
+            if end_song {
+                break;
             }
 
-            // Call 'end' on all internal modules
-            Ok(())
-        });
+            // Give the CPU a lil snooze
+            // TODO: add "turbo mode" flag, that removes this delay
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
 
+        // Call 'end' on all internal modules
         for module in &mut self.polling_modules {
             module.end(&self.lua);
         }

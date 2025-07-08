@@ -242,6 +242,7 @@ impl DspModule {
 
 impl CommandModule for DspModule {
     fn init(&mut self, _lua: &Lua) {}
+    fn update(&mut self, _time: &f64, _lua: &Lua) {}
     fn end(&mut self, _lua: &Lua) {}
 
     fn get_post_init_program(&self) -> Option<String> {
