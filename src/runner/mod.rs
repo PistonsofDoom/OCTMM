@@ -116,7 +116,7 @@ impl Runner {
                             scope.create_function_mut(|_, arg: String| {
                                 Ok(module.command(&self.lua, &arg))
                             })?,
-                            )
+                        )
                         .expect("Error using command function");
                 }
 
