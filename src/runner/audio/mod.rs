@@ -25,6 +25,45 @@ impl AudioModule {
 }
 
 impl AudioModule {
+    fn handle_command(&mut self, arg: &String) -> String {
+        let arg_vec: Vec<&str> = arg.split(';').collect();
+        let arg_cmd = arg_vec.get(0).expect("No command found\n");
+
+        match *arg_cmd {
+            "play" => {
+                let arg_id = arg_vec
+                    .get(1)
+                    .expect("play, id not found")
+                    .parse::<usize>()
+                    .expect("play id, string conversion");
+                let arg_duration = arg_vec
+                    .get(2)
+                    .expect("play, duration not found")
+                    .parse::<f64>()
+                    .expect("play duration, string conversion");
+
+                let net = self.dsp.get_net(arg_id);
+                if net.is_none() {
+                    return "nil".to_string();
+                }
+
+                let ret = self.sequencer.push_relative(
+                    0.0,
+                    arg_duration,
+                    Fade::Smooth,
+                    0.01,
+                    0.01,
+                    Box::new(net.unwrap()),
+                );
+
+                return format!("{:?}", ret);
+            }
+            _ => {
+                panic!("Invalid audio command {}", arg_cmd);
+            }
+        }
+    }
+
     fn run_output(audio_graph: Box<dyn AudioUnit>) {
         let host = cpal::default_host();
 
@@ -69,7 +108,7 @@ impl AudioModule {
                             let right: T = T::from_sample(sample.1 as f64);
 
                             for (channel, sample) in frame.iter_mut().enumerate() {
-                                *sample = if channel & 1 == 0 {left} else {right};
+                                *sample = if channel & 1 == 0 { left } else { right };
                             }
                         }
                     },
@@ -115,10 +154,17 @@ impl CommandModule for AudioModule {
 
         let dsp_cmd_name = &self.dsp.get_command_name();
 
+        // DSP Commands
         if arg_cmd == dsp_cmd_name {
             return self.dsp.command(
                 lua,
                 &arg.strip_prefix((dsp_cmd_name.to_owned() + ";").as_str())
+                    .expect("No arguments after command")
+                    .to_string(),
+            );
+        } else if arg_cmd == &"audio" {
+            return self.handle_command(
+                &arg.strip_prefix("audio;")
                     .expect("No arguments after command")
                     .to_string(),
             );
