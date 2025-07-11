@@ -7,6 +7,8 @@ use std::collections::HashMap;
 
 mod dsp;
 
+const LUA_MODULE: &str = include_str!("audio.luau");
+
 pub struct AudioModule {
     sequencer: Sequencer,
     // Modules
@@ -129,6 +131,11 @@ impl CommandModule for AudioModule {
     fn init(&mut self, lua: &Lua) {
         // Initialize modules
         self.dsp.init(lua);
+
+        // Initialize lua
+        lua.load(LUA_MODULE)
+            .exec()
+            .expect("Failed to load audio module, got\n");
 
         // Start playback
         let backend = self.sequencer.backend();
