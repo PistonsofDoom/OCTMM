@@ -4,16 +4,8 @@ local function play(net_id: Number, duration: Number)
 	return _audio_command_handler("audio;play;"..tostring(net_id)..";"..tostring(duration))
 end
 
--- Metatables --
-
-_SequenceEvent = {}
-_SequenceEvent._mt = {}
-
-function _SequenceEvent.new(event_id: String)
-	-- TODO: This should do sanity checking to confirm that it is a valid
-	-- event_id
-	
-	return nil
+local function stop(event_id: String)
+	return _audio_command_handler("audio;stop;"..tostring(event_id)) == "true"
 end
 
 -- User facing functions
@@ -27,5 +19,10 @@ function Play(net: Table, duration)
 		duration = 99999
 	end
 
-	return _SequenceEvent.new(play(net_id, duration))
+	return play(net_id, duration)
+end
+
+-- Takes in the "event id" string returned by Play()
+function Stop(event_id: String)
+	return stop(event_id)
 end

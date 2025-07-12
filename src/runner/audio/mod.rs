@@ -1,6 +1,6 @@
 use crate::runner::{CommandModule, audio::dsp::DspModule};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
+use cpal::{Device, FromSample, SizedSample, StreamConfig};
 use fundsp::hacker32::*;
 use mlua::Lua;
 use std::collections::HashMap;
@@ -11,6 +11,8 @@ const LUA_MODULE: &str = include_str!("audio.luau");
 
 pub struct AudioModule {
     sequencer: Sequencer,
+    // todo: Either extend EventId
+    event_map: HashMap<String, EventId>,
     // Modules
     dsp: DspModule,
 }
@@ -21,6 +23,7 @@ impl AudioModule {
     pub fn new() -> AudioModule {
         AudioModule {
             sequencer: Sequencer::new(false, 1),
+            event_map: HashMap::new(),
             dsp: DspModule::new(),
         }
     }
@@ -49,7 +52,7 @@ impl AudioModule {
                     return "nil".to_string();
                 }
 
-                let ret = self.sequencer.push_relative(
+                let event_id = self.sequencer.push_relative(
                     0.0,
                     arg_duration,
                     Fade::Smooth,
@@ -57,8 +60,24 @@ impl AudioModule {
                     0.01,
                     Box::new(net.unwrap()),
                 );
+                let event_name = format!("{:?}", event_id);
 
-                return format!("{:?}", ret);
+                self.event_map.insert(event_name.to_string(), event_id);
+                return event_name;
+            }
+            "stop" => {
+                let arg_event_id = arg_vec
+                    .get(1)
+                    .expect("stop, id not found");
+                
+                let event_id = self.event_map.get(&arg_event_id.to_string());
+
+                if event_id.is_none() {
+                    return false.to_string();
+                }
+
+                self.sequencer.edit_relative(event_id.unwrap().clone(), 0.01, 0.01);
+                return true.to_string();
             }
             _ => {
                 panic!("Invalid audio command {}", arg_cmd);
