@@ -69,17 +69,16 @@ impl AudioModule {
                 return event_name;
             }
             "stop" => {
-                let arg_event_id = arg_vec
-                    .get(1)
-                    .expect("stop, id not found");
-                
+                let arg_event_id = arg_vec.get(1).expect("stop, id not found");
+
                 let event_id = self.event_map.get(&arg_event_id.to_string());
 
                 if event_id.is_none() {
                     return false.to_string();
                 }
 
-                self.sequencer.edit_relative(event_id.unwrap().clone(), 0.01, 0.01);
+                self.sequencer
+                    .edit_relative(event_id.unwrap().clone(), 0.01, 0.01);
                 return true.to_string();
             }
             _ => {
