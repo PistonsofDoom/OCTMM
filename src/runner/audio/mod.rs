@@ -11,7 +11,10 @@ const LUA_MODULE: &str = include_str!("audio.luau");
 
 pub struct AudioModule {
     sequencer: Sequencer,
-    // todo: Either extend EventId
+    // NOTE: Because fundsp doesn't expose any manners in which EventId can be
+    // created from a non-eventid class, this event_map serves as a hashmap of
+    // the debug output -> the event id. Its ugly, it uses ~800 mb of ram per
+    // 1 million notes played. Which feels "good enough" for now.
     event_map: HashMap<String, EventId>,
     // Modules
     dsp: DspModule,
