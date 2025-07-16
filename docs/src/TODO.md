@@ -1,6 +1,7 @@
 
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
+    - Auto Constant.new for numbers + nets
 - Refactor Timer module, use metatables for convenience
     - Also, assure timing is setup consistently
     - Offset for callbacks
