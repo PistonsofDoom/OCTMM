@@ -204,3 +204,45 @@ impl CommandModule for AudioModule {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::runner::{CommandModule, audio::AudioModule};
+    use fundsp::hacker32::*;
+    use mlua::Lua;
+
+    #[test]
+    pub fn test_rust_module() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut AudioModule::new();
+
+        let _ = lua.scope(|scope| {
+            let post_init_program = module.get_post_init_program();
+
+            module.init(&lua);
+
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            lua.load(post_init_program.unwrap())
+                .exec()
+                .expect("Failed to load post init on module, got\n");
+
+            let test_program = r#"
+                local test_net = Constant.new(0.0) * (Constant.new(440)..Sine)
+
+                _G.SUCCESS = (Stop(Play(test_net)) == true)
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+            assert!(globals.get::<bool>("SUCCESS").is_ok());
+            assert!(globals.get::<bool>("SUCCESS").unwrap());
+            Ok(())
+        });
+    }
+}
