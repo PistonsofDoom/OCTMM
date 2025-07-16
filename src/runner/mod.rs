@@ -8,6 +8,7 @@ pub trait CommandModule {
     /// Ran before runtime, and before commands are binded
     fn init(&mut self, lua: &Lua);
     /// Ran every 'tick' during runtime
+    /// This is ran before Rust <-> Lua callbacks are defined.
     fn update(&mut self, time: &f64, lua: &Lua);
     /// Ran after runtime
     fn end(&mut self, lua: &Lua);
