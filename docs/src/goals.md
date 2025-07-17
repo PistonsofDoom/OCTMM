@@ -3,7 +3,7 @@
 
 - [x] CLI Parser
 - [x] MLua crate setup & usage
-- [ ] fundsp / Live Audio Integration
+- [x] fundsp / Live Audio Integration
 - [ ] Sample Playback
 - [ ] Note Utilities
 - [ ] Audio Exports

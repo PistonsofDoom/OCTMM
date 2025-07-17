@@ -126,7 +126,7 @@ impl DspModule {
     // are generated on the fly, rather than pre-generated, this could become a problem.
 
     /// Check whether a network entry exists at the target index
-    pub fn net_exists(&mut self, target: usize) -> bool {
+    pub fn net_exists(&self, target: usize) -> bool {
         return target < self.nets.len();
     }
 
@@ -146,7 +146,15 @@ impl DspModule {
         return Some(target);
     }
 
-    /// Create a new network that contains a constant of the given value 
+    pub fn get_net(&self, target: usize) -> Option<Net> {
+        if !self.net_exists(target) {
+            return None;
+        }
+
+        return Some(self.nets[target].clone());
+    }
+
+    /// Create a new network that contains a constant of the given value
     pub fn net_constant(&mut self, value: f32) -> usize {
         self.net_from(&Net::wrap(Box::new(constant(value))))
     }
@@ -242,13 +250,14 @@ impl DspModule {
 
 impl CommandModule for DspModule {
     fn init(&mut self, _lua: &Lua) {}
+    fn update(&mut self, _time: &f64, _lua: &Lua) {}
     fn end(&mut self, _lua: &Lua) {}
 
     fn get_post_init_program(&self) -> Option<String> {
         Some(LUA_MODULE.to_string())
     }
     fn get_command_name(&self) -> String {
-        "_dsp_command_handler".to_string()
+        "dsp".to_string()
     }
     fn command(&mut self, _lua: &Lua, arg: &String) -> String {
         let arg_vec: Vec<&str> = arg.split(';').collect();
@@ -431,7 +440,7 @@ impl CommandModule for DspModule {
 #[cfg(test)]
 mod tests {
     use super::{DspModule, NodeType};
-    use crate::runner::CommandModule;
+    use crate::runner::{CommandModule, audio::AudioModule};
     use fundsp::hacker32::*;
     use mlua::Lua;
 
@@ -475,6 +484,9 @@ mod tests {
         let id2 = dsp.net_from(&Net::new(0, 4));
         assert_eq!(id2, default_length + 1);
         assert!(dsp.net_exists(default_length + 1));
+
+        assert!(dsp.get_net(default_length + 200).is_none());
+        assert!(dsp.get_net(default_length + 1).is_some());
 
         // Test net_replace
         // Should fail, as network doesn't exist here
@@ -553,13 +565,13 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut DspModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let post_init_program = module.get_post_init_program();
+
+        module.init(&lua);
+        module.update(&0.0, &lua);
 
         let _ = lua.scope(|scope| {
-            let post_init_program = module.get_post_init_program();
-
-            module.init(&lua);
-
             lua.globals()
                 .set(
                     module.get_command_name(),
@@ -595,6 +607,8 @@ mod tests {
 
             Ok(())
         });
+
+        module.end(&lua);
     }
 
     // LUA CODE TESTS
@@ -602,7 +616,7 @@ mod tests {
     fn test_shared_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut DspModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new();
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -615,11 +629,11 @@ mod tests {
                 .expect("Error using command function");
 
             let test_program = r#"
-                _G.r1 = _dsp_command_handler("shared_exists;test")
-                _G.r2 = _dsp_command_handler("shared_set;test;1.2")
-                _G.r3 = _dsp_command_handler("shared_exists;test")
-                _G.r4 = _dsp_command_handler("shared_get;test")
-                _G.r5 = _dsp_command_handler("shared_get_net;test")
+                _G.r1 = _audio_command_handler("dsp;shared_exists;test")
+                _G.r2 = _audio_command_handler("dsp;shared_set;test;1.2")
+                _G.r3 = _audio_command_handler("dsp;shared_exists;test")
+                _G.r4 = _audio_command_handler("dsp;shared_get;test")
+                _G.r5 = _audio_command_handler("dsp;shared_get_net;test")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -644,7 +658,7 @@ mod tests {
     fn test_net_management_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut DspModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new();
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -657,11 +671,11 @@ mod tests {
                 .expect("Error using command function");
 
             let test_program = r#"
-                _G.r1 = _dsp_command_handler("net_vector_length")
-                _G.r2 = _dsp_command_handler("net_exists;" .. tostring(_G.r1))
-                _G.r3 = _dsp_command_handler("net_constant;3.3")
-                _G.r4 = _dsp_command_handler("net_exists;" .. tostring(_G.r1))
-                _G.r5 = _dsp_command_handler("net_clone;0")
+                _G.r1 = _audio_command_handler("dsp;net_vector_length")
+                _G.r2 = _audio_command_handler("dsp;net_exists;" .. tostring(_G.r1))
+                _G.r3 = _audio_command_handler("dsp;net_constant;3.3")
+                _G.r4 = _audio_command_handler("dsp;net_exists;" .. tostring(_G.r1))
+                _G.r5 = _audio_command_handler("dsp;net_clone;0")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -686,7 +700,7 @@ mod tests {
     fn test_net_proxy_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut DspModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new();
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -700,14 +714,14 @@ mod tests {
 
             // Test defaults
             let test_program = r#"
-                _G.r1 = _dsp_command_handler("net_default;hammond")
-                _G.r2 = _dsp_command_handler("net_default;organ")
-                _G.r3 = _dsp_command_handler("net_default;saw")
-                _G.r4 = _dsp_command_handler("net_default;sine")
-                _G.r5 = _dsp_command_handler("net_default;softsaw")
-                _G.r6 = _dsp_command_handler("net_default;square")
-                _G.r7 = _dsp_command_handler("net_default;triangle")
-                _G.r8 = _dsp_command_handler("net_default;badinput")
+                _G.r1 = _audio_command_handler("dsp;net_default;hammond")
+                _G.r2 = _audio_command_handler("dsp;net_default;organ")
+                _G.r3 = _audio_command_handler("dsp;net_default;saw")
+                _G.r4 = _audio_command_handler("dsp;net_default;sine")
+                _G.r5 = _audio_command_handler("dsp;net_default;softsaw")
+                _G.r6 = _audio_command_handler("dsp;net_default;square")
+                _G.r7 = _audio_command_handler("dsp;net_default;triangle")
+                _G.r8 = _audio_command_handler("dsp;net_default;badinput")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -732,15 +746,15 @@ mod tests {
 
             // Test all other proxys
             let test_program = r#"
-                local constant = _dsp_command_handler("net_constant;2.0")
+                local constant = _audio_command_handler("dsp;net_constant;2.0")
                 -- Successes
-                _G.r1 = _dsp_command_handler("net_product;0;"..tostring(constant))
-                _G.r2 = _dsp_command_handler("net_bus;1;2")
-                _G.r3 = _dsp_command_handler("net_pipe;1;2")
+                _G.r1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
+                _G.r2 = _audio_command_handler("dsp;net_bus;1;2")
+                _G.r3 = _audio_command_handler("dsp;net_pipe;1;2")
                 -- Failures
-                _G.r4 = _dsp_command_handler("net_product;1;2")
-                _G.r5 = _dsp_command_handler("net_bus;1;100")
-                _G.r6 = _dsp_command_handler("net_pipe;1;100")
+                _G.r4 = _audio_command_handler("dsp;net_product;1;2")
+                _G.r5 = _audio_command_handler("dsp;net_bus;1;100")
+                _G.r6 = _audio_command_handler("dsp;net_pipe;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
