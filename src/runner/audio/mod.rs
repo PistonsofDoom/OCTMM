@@ -208,7 +208,6 @@ impl CommandModule for AudioModule {
 #[cfg(test)]
 mod tests {
     use crate::runner::{CommandModule, audio::AudioModule};
-    use fundsp::hacker32::*;
     use mlua::Lua;
 
     #[test]
@@ -216,12 +215,12 @@ mod tests {
         let lua = Lua::new();
         let globals = lua.globals();
         let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let post_init_program = module.get_post_init_program();
+
+        module.init(&lua);
+        module.update(&0.0, &lua);
 
         let _ = lua.scope(|scope| {
-            let post_init_program = module.get_post_init_program();
-
-            module.init(&lua);
-
             lua.globals()
                 .set(
                     module.get_command_name(),
@@ -244,5 +243,7 @@ mod tests {
             assert!(globals.get::<bool>("SUCCESS").unwrap());
             Ok(())
         });
+
+        module.end(&lua);
     }
 }
