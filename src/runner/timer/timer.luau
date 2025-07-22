@@ -1,18 +1,19 @@
--- Constants 
-
--- Timer Callback Types
-local TIMER_CALLBACK_TICK = "tick"
-local TIMER_CALLBACK_BEAT = "beat"
-
--- Metatables
-
 -- Initialize Globals
-_G.Timer = {};
-_G.Timer._Callbacks = {};
-_G.Timer._BPM = 120;
+_G.Timer = {}
+_G.Timer._Callbacks = {}
+_G.Timer._Time = 0.0
+_G.Timer._BPM = 120
+-- Number, acts as a unique id every time its used
+_G.Timer._UID = 0
 
 -- Local utility functions
 
+-- Increment the global _UID variable, then
+-- return the number as a string
+local function getUID()
+	Timer._UID += 1
+	return tostring(Timer._UID)
+end
 
 -- 	addCallback(
 --		callback_name - [String] name of the callback, should be unique
@@ -41,6 +42,9 @@ local function addCallback(callback_name: string, callback_type: string, callbac
 end
 
 -- Global Functions
+_G.GetTime = function()
+	return Timer._Time
+end
 
 -- SetBPM(
 -- 		bpm - [Number] New BPM of the song, has to be > 0, can
@@ -48,7 +52,7 @@ end
 -- )
 -- 
 -- Set the BPM of the song
-_G.Timer.SetBPM = function(bpm: number)
+_G.SetBPM = function(bpm: number)
 	if bpm <= 0 then
 		error("Tried to set the BPM <= 0")
 	end
@@ -60,133 +64,136 @@ end
 -- ) -> [Number] Current BPM
 --
 -- Returns the current BPM of the song
-_G.Timer.GetBPM = function() 
+_G.GetBPM = function() 
 	return _G.Timer._BPM
 end
 
---	AddTickCallback(
---		callback_name - [String] Name of the callback function,
---						needs to be unique
+-- Metatables
+-- _type = type of callback
+-- _name = callback name
+-- _function = function to callback to
 --
---		callback_func - [Function (number)] Function that gets called,
---						can be used within multiple callbacks
---	)
+-- Beat Only:
+-- _frequency = Amount of beats to wait before being called, decimal value
+-- _offset = Offset from which the callback should be called.
 --
---	Add a callback function that gets called every 'tick'
-_G.Timer.AddTickCallback = function(callback_name: string, callback_func)
-	addCallback(callback_name, TIMER_CALLBACK_TICK, nil, callback_func)
-end
+Timer._methods = {}
 
---	AddBeatCallback(
---		callback_name - [String] Name of the callback function,
---						needs to be unique
+-- Generic Methods
+-- Enables the callback
+-- If 'delay' is true, the frequency of the callback is added as a start
+-- delay
 --
---		callback_freq - [Number] Number that represents the number of
---						'beats' that must pass before each
---						call. Has to be greater than 0, but can
---						have a decimal
---
---		callback_func - [Function (number)] Function to actually call back to,
---						Can be used within multiple callbacks
---	)
---
---	Add a callback function that gets called at a certain frequency 
---	per beat
-_G.Timer.AddBeatCallback = function(callback_name: string, callback_freq: number, callback_func)
-	if callback_freq <= 0 then
-		error("Tried to AddBeatCallback "..callback_name.." with a frequency below 0")
-	end
-	addCallback(callback_name, TIMER_CALLBACK_BEAT, callback_freq, callback_func)
-end
-
---  RemoveCallback(
---  	callback_name - [String] Name of the callback function
---  					to remove.
---  ) -> [Bool] - Whether or not a callback was removed
---
---  Remove a callback, and return whether one existed before being
---  removed.
-_G.Timer.RemoveCallback = function(callback_name: string)
-	local removed_callback = false
-
-	if _G.Timer.IsCallback(callback_name) then
-		removed_callback = true
+-- Returns whether or not we succeeded in enabling the timer.
+Timer._methods.Enable = function(self, delay)
+	if self._type == nil or self._name == nil then
+		error("Timer type or name was not found. Did you call the method with '.' instead of ':'?")
 	end
 
-	_G.Timer._Callbacks[callback_name] = nil
-
-	return removed_callback
-end
-
---  IsCallback(
---  	callback_name - [String] Name of the callback functon to
---  					check for.
---  ) -> [Bool] - Whether or not the callback exists
---
---  Returns whether or not the specified callback exists
-_G.Timer.IsCallback = function(callback_name: string)
-	if not _G.Timer._Callbacks[callback_name] then
+	-- If the timer exists, return as we don't need to add any callbacks
+	if Timer._Callbacks[self._name] ~= nil then
 		return false
 	end
 
-	return true
-end
-
---  GetCallbackType(
---  	callback_name - [String] Name of the callback function to
---  					check the type of
---  ) -> [String] Type of the callback, or nil if no callback was found
---
---  Get the type of a callback, or nil if no callback exists
-_G.Timer.GetCallbackType = function(callback_name: string)
-	if not _G.Timer._Callbacks[callback_name] then
-		return nil
+	-- BEAT Specific Sanity Checks
+	if self._type == BEAT then
+		if self._frequency == nil then
+			error("Timer frequency was nil. Please set timer frequency")
+		elseif self._offset == nil then
+			error("Timer offset was nil.")
+		end
 	end
 
-	return _G.Timer._Callbacks[callback_name]["type"]
+	-- At this point, we're good to enable the callback
+	Timer._Callbacks[self._name] = {}
+	Timer._Callbacks[self._name]["type"] = self._type
+	Timer._Callbacks[self._name]["function"] = self._function
+
+	if self._type == BEAT then
+		local bpm_modifier = 60.0 / GetBPM()
+		local enable_time = GetTime() + (bpm_modifier * self._offset)
+
+		if delay then
+			enable_time += bpm_modifier * self._frequency
+		end
+
+		Timer._Callbacks[self._name]["frequency"] = self._frequency
+		Timer._Callbacks[self._name]["time"] = enable_time
+	end
 end
 
---  GetCallbackFreq(
---  	callback_name - [String] Name of the callback function to
---  					check the type of
---  ) -> [Number] Frequency of the callback, or nil if no callback was found,
---  	or the callback was not of type "beat"
---
---  Get the frequency of a callback, or nil if no callback exists, or
---  the callback type is not "beat"
-_G.Timer.GetCallbackFreq = function(callback_name: string)
-	if not _G.Timer._Callbacks[callback_name] then
-		return nil
-	end
-
-	if _G.Timer._Callbacks[callback_name]["type"] ~= "beat" then
-		return nil
-	end
-
-	return _G.Timer._Callbacks[callback_name]["freq"]
+-- Disables the callback
+Timer._methods.Disable = function(self)
+	Timer._Callbacks[self._name] = nil
 end
 
---  SetCallbackFreq(
---  	callback_name - [String] Name of the callback function to
---  					check the type of
---  	callback_freq - [Number] Target frequency of the callback
---  )
---
---  Set the frequency of a callback, throws an error if the callback
---  doesn't exist, or the callback type isn't "beat"
-_G.Timer.SetCallbackFreq = function(callback_name: string, callback_freq: number)
+-- Wrapper
+Timer._methods.SetEnable = function(self, state, delay)
+	if state then
+		self.Enable(delay)
+	else
+		self.Disable()
+	end
+end
+
+Timer._methods.SetFreq = function(self, new_freq)
 	
-	if not _G.Timer._Callbacks[callback_name] then
-		error("Callback "..callback_name.." doesn't exist")
+end
+
+Timer._methods.SetOffset = function(self, new_offset)
+	
+end
+
+-- 
+-- Arguments:
+-- 	timer_type: Takes in the BEAT or TICK constant global variable
+-- 		TICK -> Function will create a "tick" callback
+-- 		BEAT -> Function will create a "beat" callback
+--
+-- 	func: Callback Function
+--
+-- 	freq: Only used in 'BEAT', refers to the about of beats per callback
+--
+-- 	offset: Offset in BEATS from which the BEAT should be called.
+--
+function Timer.new(timer_type: String, func, freq, offset)
+	-- Sanity check
+	if timer_type ~= BEAT and timer_type ~= TICK or func == nil then
+		error("Invalid timer type")
 	end
 
-	if _G.Timer._Callbacks[callback_name]["type"] ~= "beat" then
-		error("Callback "..callback_name.." type isn't beat")
+	if func == nil or typeof(func) ~= "function" then
+		error("Provided function was invalid")
 	end
 
-	if callback_freq <= 0 then
-		error("Tried to set frequency for callback "..callback_name.." below 0")
+	-- Create table
+	local new_callback = {}
+
+	-- Constant Variables
+	new_callback._name = getUID()
+	new_callback._type = timer_type
+	new_callback._function = func
+
+	-- Add Generic Methods
+	new_callback.Enable = Timer._methods.Enable
+
+	-- Add extra functionality for only BEAT types
+	if timer_type == BEAT then
+		-- These are optional during creation.
+		-- If frequency isn't provided, and the timer is attempted to be Enabled, it will throw an error
+		if typeof(freq) == "number" then
+			new_callback._frequency = freq
+		end
+		-- If no offset is provided, set it to 0
+		if typeof(offset) == "number" then
+			new_callback._offset = offset
+		else
+			new_callback._offset = 0
+		end
+
+		new_callback.SetFreq = Timer._methods.SetFreq
+		new_callback.SetOffset = Timer._methods.SetOffset
 	end
 
-	_G.Timer._Callbacks[callback_name]["freq"] = callback_freq
+	return new_callback
 end

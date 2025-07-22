@@ -25,12 +25,9 @@ impl TimerModule {
     }
 
     pub fn type_from_string(from_str: String) -> Option<CallbackType> {
-        let tick_string: String = CallbackType::Tick.to_string();
-        let beat_string: String = CallbackType::Beat.to_string();
-
-        match from_str {
-            tick_string => Some(CallbackType::Tick),
-            beat_string => Some(CallbackType::Beat),
+        match from_str.as_str() {
+            "tick" => Some(CallbackType::Tick),
+            "beat" => Some(CallbackType::Beat),
             _ => None,
         }
     }
@@ -62,7 +59,7 @@ impl PollingModule for TimerModule {
             .expect("Didn't find `Timer._Callbacks`");
         let bpm: f64 = timer.get("_BPM").expect("Invalid BPM");
 
-        timer.set("Time", time.clone()).expect("Unable to set Time");
+        timer.set("_Time", time.clone()).expect("Unable to set Time");
 
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
@@ -76,12 +73,12 @@ impl PollingModule for TimerModule {
             )
             .expect(format!("Invalid callback type on callback {}:", name).as_str());
             let call_func: Function = value
-                .get("func")
+                .get("function")
                 .expect(format!("Invalid callback function on callback {}:", name).as_str());
 
             match call_type {
                 CallbackType::Beat => {
-                    let call_freq: f64 = value.get("freq").expect(
+                    let call_freq: f64 = value.get("frequency").expect(
                         format!("Invalid callback frequency on callback {}:", name).as_str(),
                     );
                     let call_time: f64 = value.get("time").unwrap_or(0.0);
