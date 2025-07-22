@@ -1,7 +1,21 @@
 use crate::runner::PollingModule;
-use mlua::{Function, Lua, String, Table};
+use mlua::{Function, Lua, Table};
 
 const LUA_MODULE: &str = include_str!("timer.luau");
+
+enum CallbackType {
+    Tick,
+    Beat,
+}
+
+impl CallbackType {
+    pub fn to_string(&self) -> String {
+        match self {
+            CallbackType::Tick => "tick".to_string(),
+            CallbackType::Beat => "beat".to_string(),
+        }
+    }
+}
 
 pub struct TimerModule {}
 
@@ -9,10 +23,30 @@ impl TimerModule {
     pub fn new() -> TimerModule {
         TimerModule {}
     }
+
+    pub fn type_from_string(from_str: String) -> Option<CallbackType> {
+        let tick_string: String = CallbackType::Tick.to_string();
+        let beat_string: String = CallbackType::Beat.to_string();
+
+        match from_str {
+            tick_string => Some(CallbackType::Tick),
+            beat_string => Some(CallbackType::Beat),
+            _ => None,
+        }
+    }
 }
 
 impl PollingModule for TimerModule {
     fn init(&mut self, lua: &Lua) {
+        let globals = lua.globals();
+
+        globals
+            .set("BEAT", CallbackType::Beat.to_string())
+            .expect("Error initializing BEAT lua constant");
+        globals
+            .set("TICK", CallbackType::Tick.to_string())
+            .expect("Error initializing TICK lua constant");
+
         lua.load(LUA_MODULE)
             .exec()
             .expect("Failed to load timer module, got\n");
@@ -28,47 +62,55 @@ impl PollingModule for TimerModule {
             .expect("Didn't find `Timer._Callbacks`");
         let bpm: f64 = timer.get("_BPM").expect("Invalid BPM");
 
+        timer.set("Time", time.clone()).expect("Unable to set Time");
+
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
             let (key, value) = pair.expect("Invalid callback");
-            let name: &str = &key.to_str().expect("Invalid callback key");
+            let name: &str = &key.to_string();
 
-            let call_type: String = value
-                .get("type")
-                .expect(format!("Invalid callback type on callback {}:", name).as_str());
+            let call_type = TimerModule::type_from_string(
+                value
+                    .get("type")
+                    .expect(format!("Invalid callback type on callback {}:", name).as_str()),
+            )
+            .expect(format!("Invalid callback type on callback {}:", name).as_str());
             let call_func: Function = value
                 .get("func")
                 .expect(format!("Invalid callback function on callback {}:", name).as_str());
 
-            if call_type == "beat" {
-                let call_freq: f64 = value
-                    .get("freq")
-                    .expect(format!("Invalid callback frequency on callback {}:", name).as_str());
-                let call_time: f64 = value.get("time").unwrap_or(0.0);
-
-                if time - call_time >= (60.0 / bpm) * call_freq {
-                    let time = time.clone();
-
-                    value.set("time", time).expect(
-                        format!("Failed to set callback time on callback {}:", name).as_str(),
+            match call_type {
+                CallbackType::Beat => {
+                    let call_freq: f64 = value.get("freq").expect(
+                        format!("Invalid callback frequency on callback {}:", name).as_str(),
                     );
+                    let call_time: f64 = value.get("time").unwrap_or(0.0);
+
+                    if time - call_time >= (60.0 / bpm) * call_freq {
+                        let time = time.clone();
+
+                        value.set("time", time).expect(
+                            format!("Failed to set callback time on callback {}:", name).as_str(),
+                        );
+                        call_func.call::<()>(time).expect(
+                            format!(
+                                "Error occured while running beat update on callback {}:",
+                                name
+                            )
+                            .as_str(),
+                        );
+                    }
+                },
+                CallbackType::Tick => {
+                    let time = time.clone();
                     call_func.call::<()>(time).expect(
                         format!(
-                            "Error occured while running beat update on callback {}:",
+                            "Error occured while running tick update on callback {}:",
                             name
                         )
                         .as_str(),
                     );
                 }
-            } else {
-                let time = time.clone();
-                call_func.call::<()>(time).expect(
-                    format!(
-                        "Error occured while running tick update on callback {}:",
-                        name
-                    )
-                    .as_str(),
-                );
             }
         }
     }
@@ -109,7 +151,7 @@ mod tests {
                 _G.TestValue_Beat2 += 1
             end
 
-            timer.SetBPM(60)
+            SetBPM(60)
 
             timer.AddTickCallback("TickCall", tick_callback)
             timer.AddBeatCallback("BeatCall", 1, beat_callback)
@@ -160,12 +202,12 @@ mod tests {
         let fail_case1 = r#"
             local timer = _G.Timer
 
-            timer.SetBPM(0)
+            SetBPM(0)
         "#;
         let fail_case2 = r#"
             local timer = _G.Timer
 
-            timer.SetBPM("1")
+            SetBPM("1")
         "#;
 
         assert!(lua.load(fail_case1).exec().is_err());
@@ -175,9 +217,9 @@ mod tests {
         let success_case = r#"
             local timer = _G.Timer
 
-            timer.SetBPM(321.50)
+            SetBPM(321.50)
 
-            _G.TestValue_BPM = timer.GetBPM()
+            _G.TestValue_BPM = GetBPM()
         "#;
 
         assert!(lua.load(success_case).exec().is_ok());
