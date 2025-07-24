@@ -24,7 +24,7 @@ impl TimerModule {
         TimerModule {}
     }
 
-    pub fn type_from_string(from_str: String) -> Option<CallbackType> {
+    fn type_from_string(from_str: String) -> Option<CallbackType> {
         match from_str.as_str() {
             "tick" => Some(CallbackType::Tick),
             "beat" => Some(CallbackType::Beat),
@@ -59,7 +59,9 @@ impl PollingModule for TimerModule {
             .expect("Didn't find `Timer._Callbacks`");
         let bpm: f64 = timer.get("_BPM").expect("Invalid BPM");
 
-        timer.set("_Time", time.clone()).expect("Unable to set Time");
+        timer
+            .set("_Time", time.clone())
+            .expect("Unable to set Time");
 
         // optimization: use Table::for_each
         for pair in callbacks.pairs::<String, Table>() {
@@ -97,7 +99,7 @@ impl PollingModule for TimerModule {
                             .as_str(),
                         );
                     }
-                },
+                }
                 CallbackType::Tick => {
                     let time = time.clone();
                     call_func.call::<()>(time).expect(
@@ -197,13 +199,9 @@ mod tests {
 
         // Test failure case
         let fail_case1 = r#"
-            local timer = _G.Timer
-
             SetBPM(0)
         "#;
         let fail_case2 = r#"
-            local timer = _G.Timer
-
             SetBPM("1")
         "#;
 
@@ -212,8 +210,6 @@ mod tests {
 
         // Test success case
         let success_case = r#"
-            local timer = _G.Timer
-
             SetBPM(321.50)
 
             _G.TestValue_BPM = GetBPM()
@@ -231,287 +227,187 @@ mod tests {
     }
 
     #[test]
-    fn test_add_tick_callback() {
+    fn test_tick_callbacks() {
         let lua = Lua::new();
         let globals = lua.globals();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
 
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
+        timer.init(&lua);
 
-        // Test fail cases
-        let fail_case1 = r#"
-            local timer = _G.Timer
+        // Init environment
+        let test_program = r#"
+            _G.TestValue = 0
 
-            timer.AddTickCallback()
-        "#;
-        let fail_case2 = r#"
-            local timer = _G.Timer
-
-            timer.AddTickCallback("My Callback")
-        "#;
-        let fail_case3 = r#"
-            local timer = _G.Timer
-
-            timer.AddTickCallback("My Callback", 2)
-        "#;
-
-        assert!(lua.load(fail_case1).exec().is_err());
-        assert!(lua.load(fail_case2).exec().is_err());
-        assert!(lua.load(fail_case3).exec().is_err());
-
-        // Test success case
-        let success_case = r#"
-            local timer = _G.Timer
-
-            local function userCallFunction()
-
+            local function my_callback()
+                _G.TestValue += 1
             end
 
-            timer.AddTickCallback("UserCall", userCallFunction)
+            local my_timer = Timer.new(TICK, my_callback)
+
+            my_timer:Enable()
         "#;
 
-        assert!(lua.load(success_case).exec().is_ok());
+        lua.load(test_program).exec().expect("Error occured");
 
-        // Test global now
-        let timer: Table = globals.get("Timer").expect("Timer table not found");
-        let callbacks: Table = timer.get("_Callbacks").expect("Callback table not found");
-        let user_call: Table = callbacks
-            .get("UserCall")
-            .expect("Didn't find user callback");
+        // Update timer twice, this should call
+        // the Tick Callback twice, and
+        // the Beat Callback once
+        timer.update(&0.5, &lua);
+        timer.update(&0.5, &lua);
+        timer.update(&1.0, &lua);
 
         assert_eq!(
-            user_call.get::<String>("type").expect("Didn't find type"),
-            "tick"
-        );
-        assert!(user_call.get::<Function>("func").is_ok());
-    }
-
-    #[test]
-    fn test_add_beat_callback() {
-        let lua = Lua::new();
-        let globals = lua.globals();
-
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
-
-        // Test fail cases
-        let fail_case1 = r#"
-            local timer = _G.Timer
-
-            timer.AddBeatCallback()
-        "#;
-        let fail_case2 = r#"
-            local timer = _G.Timer
-
-            timer.AddBeatCallback("My Callback")
-        "#;
-        let fail_case3 = r#"
-            local timer = _G.Timer
-
-            timer.AddBeatCallback("My Callback", 2)
-        "#;
-        let fail_case4 = r#"
-            local timer = _G.Timer
-
-            timer.AddBeatCallback("My Callback", 2, 2)
-        "#;
-        let fail_case5 = r#"
-            local timer = _G.Timer
-
-            local function test()
-
-            end
-
-            timer.AddBeatCallback("My Callback", false, test)
-        "#;
-
-        assert!(lua.load(fail_case1).exec().is_err());
-        assert!(lua.load(fail_case2).exec().is_err());
-        assert!(lua.load(fail_case3).exec().is_err());
-        assert!(lua.load(fail_case4).exec().is_err());
-        assert!(lua.load(fail_case5).exec().is_err());
-
-        // Test success case
-        let success_case = r#"
-            local timer = _G.Timer
-
-            local function userCallFunction()
-
-            end
-
-            timer.AddBeatCallback("UserCall", 1.0, userCallFunction)
-        "#;
-
-        assert!(lua.load(success_case).exec().is_ok());
-
-        // Test global now
-        let timer: Table = globals.get("Timer").expect("Timer table not found");
-        let callbacks: Table = timer.get("_Callbacks").expect("Callback table not found");
-        let user_call: Table = callbacks
-            .get("UserCall")
-            .expect("Didn't find user callback");
-
-        assert_eq!(
-            user_call.get::<String>("type").expect("Didn't find type"),
-            "beat"
+            globals
+                .get::<f64>("TestValue")
+                .expect("Didn't find TIMER TestValue value"),
+            3.0
         );
     }
 
     #[test]
-    fn test_get_callback_type() {
+    fn test_beat_callbacks() {
         let lua = Lua::new();
         let globals = lua.globals();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
 
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
+        timer.init(&lua);
 
-        // Test success case
-        let success_case = r#"
-            local timer = _G.Timer
+        // Init environment
+        let test_program = r#"
+            SetBPM(60.0)
 
-            local function userCallFunction()
+            _G.TestValue1 = 0
+            _G.TestValue2 = 0
+            _G.TestValue3 = 0
 
+            -- No delay, no offset
+            local timer1 = Timer.new(BEAT, nil, 1.0, 0.0)
+            -- Delay, no offset
+            local timer2 = Timer.new(BEAT, nil, 1.0, 0.0)
+            -- Delay, offset
+            local timer3 = Timer.new(BEAT, nil, 1.0, 1.0)
+
+            local function call1()
+                _G.TestValue1 += 1
+            end
+            local function call2()
+                _G.TestValue2 += 1
+            end
+            local function call3()
+                _G.TestValue3 += 1
             end
 
-            timer.AddTickCallback("TickCall", userCallFunction)
-            timer.AddBeatCallback("BeatCall", 1.0, userCallFunction)
+            timer1:SetCallback(call1)
+            timer2:SetCallback(call2)
+            timer3:SetCallback(call3)
 
-            _G.TestValue_Tick = timer.GetCallbackType("TickCall")
-            _G.TestValue_Beat = timer.GetCallbackType("BeatCall")
-            _G.TestValue_Nil = timer.GetCallbackType("NilCallback")
+            timer1:Enable()
+            timer2:Enable(true)
+            timer3:Enable(true)
         "#;
 
-        assert!(lua.load(success_case).exec().is_ok());
+        lua.load(test_program).exec().expect("Error occured");
 
-        // Test global now
+        // Update timer twice, this should call
+        // the Tick Callback twice, and
+        // the Beat Callback once
+        timer.update(&0.0, &lua);
         assert_eq!(
             globals
-                .get::<String>("TestValue_Tick")
-                .expect("Didn't find type"),
-            "tick"
-        );
-        assert_eq!(
-            globals
-                .get::<String>("TestValue_Beat")
-                .expect("Didn't find type"),
-            "beat"
-        );
-        assert!(
-            !globals
-                .contains_key("TestValue_Nil")
-                .expect("Error checking for key")
-        );
-    }
-
-    #[test]
-    fn test_get_callback_freq() {
-        let lua = Lua::new();
-        let globals = lua.globals();
-
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
-
-        // Test success case
-        let success_case = r#"
-            local timer = _G.Timer
-
-            local function userCallFunction()
-
-            end
-
-            timer.AddTickCallback("TickCall", userCallFunction)
-            timer.AddBeatCallback("BeatCall", 1.0, userCallFunction)
-
-            _G.TestValue_Tick = timer.GetCallbackFreq("TickCall")
-            _G.TestValue_Beat = timer.GetCallbackFreq("BeatCall")
-            _G.TestValue_Nil = timer.GetCallbackFreq("NilCallback")
-        "#;
-
-        assert!(lua.load(success_case).exec().is_ok());
-
-        // Test global now
-        assert!(
-            !globals
-                .contains_key("TestValue_Tick")
-                .expect("Error checking for key")
-        );
-        assert_eq!(
-            globals
-                .get::<f64>("TestValue_Beat")
-                .expect("Didn't find freq"),
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
             1.0
         );
-        assert!(
-            !globals
-                .contains_key("TestValue_Nil")
-                .expect("Error checking for key")
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue2")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
         );
-    }
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue3")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
+        timer.update(&0.5, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue2")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue3")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
 
-    #[test]
-    fn test_set_callback_freq() {
-        let lua = Lua::new();
-        let globals = lua.globals();
+        timer.update(&1.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            2.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue2")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue3")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
 
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
+        timer.update(&1.9, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            2.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue2")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue3")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
 
-        // Initialize environment
-        let init_code = r#"
-            local timer = _G.Timer
-
-            local function userCallFunction()
-
-            end
-
-            timer.AddTickCallback("TickCall", userCallFunction)
-            timer.AddBeatCallback("BeatCall", 1.0, userCallFunction)
-        "#;
-
-        assert!(lua.load(init_code).exec().is_ok());
-
-        // Error Cases
-        let fail_case1 = r#"
-            local timer = _G.Timer
-
-            timer.SetCallbackFreq("NilCall", 1.0)
-        "#;
-        let fail_case2 = r#"
-            local timer = _G.Timer
-
-            timer.SetCallbackFreq("TickCall", 1.0)
-        "#;
-        let fail_case3 = r#"
-            local timer = _G.Timer
-
-            timer.SetCallbackFreq("BeatCall", 0.0)
-        "#;
-
-        assert!(lua.load(fail_case1).exec().is_err());
-        assert!(lua.load(fail_case2).exec().is_err());
-        assert!(lua.load(fail_case3).exec().is_err());
-
-        // Success Case
-        let success_case = r#"
-            local timer = _G.Timer
-
-            timer.SetCallbackFreq("BeatCall", 3.0)
-        "#;
-
-        // Test global now
-        let timer: Table = globals.get("Timer").expect("Timer table not found");
-        let callbacks: Table = timer.get("_Callbacks").expect("Callback table not found");
-        let user_call: Table = callbacks
-            .get("BeatCall")
-            .expect("Didn't find beat callback");
-
-        assert_eq!(user_call.get::<f64>("freq").expect("Didn't find freq"), 1.0);
-        assert!(lua.load(success_case).exec().is_ok());
-        assert_eq!(user_call.get::<f64>("freq").expect("Didn't find freq"), 3.0);
+        timer.update(&2.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            3.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue2")
+                .expect("Didn't find TIMER TestValue value"),
+            2.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue3")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
     }
 }
