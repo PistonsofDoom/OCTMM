@@ -15,32 +15,6 @@ local function getUID()
 	return tostring(Timer._UID)
 end
 
--- 	addCallback(
---		callback_name - [String] name of the callback, should be unique
---
---		callback_type - [String] type, should be one of 
---								the TIMER_CALLBACK_xxxx
---		callback_freq - If type is TIMER_CALLBACK_BEAT, should be number
---						otherwise, should be nil
---
---		callback_func - [Function (number)] - Callback function, number is
---						the delta time between calls
--- 	)
--- 
-local function addCallback(callback_name: string, callback_type: string, callback_freq, callback_func)
-	if _G.Timer._Callbacks[callback_name] ~= nil then
-		error("Callback already exists!")
-	end
-	if typeof(callback_func) ~= "function" then
-		error("Tried to create callback to non-function")
-	end
-
-	_G.Timer._Callbacks[callback_name] = {}
-	_G.Timer._Callbacks[callback_name]["type"] = callback_type
-	_G.Timer._Callbacks[callback_name]["freq"] = callback_freq
-	_G.Timer._Callbacks[callback_name]["func"] = callback_func
-end
-
 -- Global Functions
 _G.GetTime = function()
 	return Timer._Time
