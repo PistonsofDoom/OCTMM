@@ -129,7 +129,7 @@ mod tests {
 
         timer.init(&lua);
 
-        // Init environment
+        // Success
         let test_program = r#"
             _G.TestValue_Tick = 0
             _G.TestValue_Beat = 0
@@ -210,6 +210,23 @@ mod tests {
             true
         );
 
+        // Failures
+        let test_program = r#"
+            local timer = Timer.new(TICK)
+
+            timer:Enable()
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+        let test_program = r#"
+            local function my_func()
+
+            end
+            local timer = Timer.new(BEAT, my_func)
+
+            timer:Enable()
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+
         timer.end(&lua);
     }
 
@@ -218,10 +235,9 @@ mod tests {
     fn test_bpm_utilities() {
         let lua = Lua::new();
         let globals = lua.globals();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
 
-        lua.load(timer::LUA_MODULE)
-            .exec()
-            .expect("Failed to load lua module");
+        timer.init(&lua);
 
         // Test failure case
         let fail_case1 = r#"
@@ -250,6 +266,8 @@ mod tests {
                 .expect("Didn't find BPM value"),
             321.50
         );
+
+        timer.end(&lua);
     }
 
     #[test]
@@ -288,6 +306,8 @@ mod tests {
                 .expect("Didn't find TIMER TestValue value"),
             3.0
         );
+
+        timer.end(&lua);
     }
 
     #[test]
@@ -298,7 +318,7 @@ mod tests {
 
         timer.init(&lua);
 
-        // Init environment
+        // Success
         let test_program = r#"
             SetBPM(60.0)
 
@@ -435,5 +455,33 @@ mod tests {
                 .expect("Didn't find TIMER TestValue value"),
             1.0
         );
+
+        // Failures
+
+        // SetOffset failure
+        let test_program = r#"
+            local timer = Timer.new(TICK)
+            timer:SetOffset(true)
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+
+        // SetFreq failures
+        let test_program = r#"
+            local timer = Timer.new(TICK)
+            timer:SetFreq(true)
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+        let test_program = r#"
+            local timer = Timer.new(TICK)
+            timer:SetFreq(0)
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+        let test_program = r#"
+            local timer = Timer.new(TICK)
+            timer:SetFreq(-1)
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+
+        timer.end(&lua);
     }
 }
