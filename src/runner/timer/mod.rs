@@ -127,16 +127,18 @@ mod tests {
         let globals = lua.globals();
         let timer: &mut dyn PollingModule = &mut TimerModule::new();
 
-        assert!(lua.load(timer::LUA_MODULE).exec().is_ok());
+        timer.init(&lua);
 
         // Init environment
         let test_program = r#"
-            local timer = _G.Timer
-
             _G.TestValue_Tick = 0
             _G.TestValue_Beat = 0
-            _G.TestValue_Beat2 = 0
+            _G.TestValue_Enabled = false
 
+            SetBPM(60)
+
+            local tick_timer = Timer.new(TICK)
+            local beat_timer = Timer.new(BEAT, nil, 1.0)
 
             local function tick_callback()
                 _G.TestValue_Tick += 1
@@ -146,45 +148,69 @@ mod tests {
                 _G.TestValue_Beat += 1
             end
 
-            local function beat2_callback()
-                _G.TestValue_Beat2 += 1
-            end
+            tick_timer:SetCallback(tick_callback)
+            beat_timer:SetCallback(beat_callback)
 
-            SetBPM(60)
+            tick_timer:Enable()
+            beat_timer:Enable()
 
-            timer.AddTickCallback("TickCall", tick_callback)
-            timer.AddBeatCallback("BeatCall", 1, beat_callback)
-            timer.AddBeatCallback("Beat2Call", 1/2, beat2_callback)
+            _G.TestValue_Enabled = tick_timer:GetEnabled() and beat_timer:GetEnabled()
         "#;
 
-        assert!(lua.load(test_program).exec().is_ok());
+        lua.load(test_program)
+            .exec()
+            .expect("Failed to run program:");
 
-        // Update timer twice, this should call
-        // the Tick Callback twice, and
-        // the Beat Callback once
-        timer.update(&0.5, &lua);
-        timer.update(&1.0, &lua);
-        timer.update(&1.25, &lua);
-
-        // Test Values
+        timer.update(&0.0, &lua);
         assert_eq!(
             globals
                 .get::<f64>("TestValue_Tick")
-                .expect("Didn't find freq"),
-            3.0
+                .expect("Didn't find value"),
+            1.0
         );
         assert_eq!(
             globals
-                .get::<f64>("TestValue_Beat2")
-                .expect("Didn't find freq"),
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find value"),
+            1.0
+        );
+
+        timer.update(&0.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Tick")
+                .expect("Didn't find value"),
             2.0
         );
         assert_eq!(
             globals
                 .get::<f64>("TestValue_Beat")
-                .expect("Didn't find freq"),
+                .expect("Didn't find value"),
             1.0
         );
+
+        timer.update(&1.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Tick")
+                .expect("Didn't find value"),
+            3.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find value"),
+            2.0
+        );
+
+        assert_eq!(
+            globals
+                .get::<bool>("TestValue_Enabled")
+                .expect("Didn't find value"),
+            true
+        );
+
+        timer.end(&lua);
     }
 
     // LUA CODE TESTS

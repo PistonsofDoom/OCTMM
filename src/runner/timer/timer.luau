@@ -133,9 +133,9 @@ end
 -- Wrapper for Enable/Disable functions
 Timer._methods.SetEnabled = function(self, state, delay)
 	if state then
-		self.Enable(delay)
+		self:Enable(delay)
 	else
-		self.Disable()
+		self:Disable()
 	end
 end
 
@@ -161,7 +161,7 @@ Timer._methods.SetFreq = function(self, new_freq)
 
 	self._frequency = new_freq
 
-	if Timer._Callbacks[self._name] then
+	if self.GetEnabled() then
 		Timer._Callbacks[self._name]["frequency"] = self._frequency
 	end
 end
@@ -173,6 +173,11 @@ Timer._methods.SetOffset = function(self, new_offset)
 	end
 
 	self._offset = new_offset
+end
+
+-- Get if timer is enabled
+Timer._methods.GetEnabled = function(self)
+	return Timer._Callbacks[self._name] ~= nil
 end
 
 -- Get frequency of a BEAT type timer
@@ -220,6 +225,7 @@ function Timer.new(timer_type: String, func, freq, offset)
 	new_callback.Disable = Timer._methods.Disable
 	new_callback.SetEnabled = Timer._methods.SetEnabled
 	new_callback.SetCallback = Timer._methods.SetCallback
+	new_callback.GetEnabled = Timer._methods.GetEnabled
 
 	-- Add extra functionality for only BEAT types
 	if timer_type == BEAT then
