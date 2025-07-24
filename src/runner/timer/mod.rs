@@ -83,10 +83,10 @@ impl PollingModule for TimerModule {
                     );
                     let call_time: f64 = value.get("time").unwrap_or(0.0);
 
-                    if time - call_time >= (60.0 / bpm) * call_freq {
+                    if time - call_time >= 0.0 {
                         let time = time.clone();
 
-                        value.set("time", time).expect(
+                        value.set("time", time + (60.0 / bpm) * call_freq).expect(
                             format!("Failed to set callback time on callback {}:", name).as_str(),
                         );
                         call_func.call::<()>(time).expect(
