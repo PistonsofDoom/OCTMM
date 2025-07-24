@@ -336,6 +336,46 @@ mod tests {
     }
 
     #[test]
+    fn test_time_utilities() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
+
+        timer.init(&lua);
+
+        // Test success case
+        let test_program = r#"
+            local function test_func()
+                _G.TestValue = GetTime()
+            end
+
+            local timer = Timer.new(TICK, test_func)
+            timer:Enable()
+        "#;
+
+        lua.load(test_program).exec().expect("Failed to load test program: ");
+
+        // Test global now
+        timer.update(&0.1, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue")
+                .expect("Didn't find time value"),
+            0.1
+        );
+
+        timer.update(&5.4, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue")
+                .expect("Didn't find time value"),
+            5.4
+        );
+
+        timer.end(&lua);
+    }
+
+    #[test]
     fn test_tick_callbacks() {
         let lua = Lua::new();
         let globals = lua.globals();
