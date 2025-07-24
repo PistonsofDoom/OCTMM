@@ -130,7 +130,7 @@ Timer._methods.Disable = function(self)
 	Timer._Callbacks[self._name] = nil
 end
 
--- Wrapper
+-- Wrapper for Enable/Disable functions
 Timer._methods.SetEnabled = function(self, state, delay)
 	if state then
 		self.Enable(delay)
@@ -139,6 +139,7 @@ Timer._methods.SetEnabled = function(self, state, delay)
 	end
 end
 
+-- Set the callback function for the timer
 Timer._methods.SetCallback = function(self, func)
 	if typeof(func) ~= "function" then
 		error("Tried to set timer callback to something besides a function")
@@ -147,6 +148,8 @@ Timer._methods.SetCallback = function(self, func)
 	self._function = func
 end
 
+-- Set the frequency of a BEAT type timer
+-- Has to be > 0
 Timer._methods.SetFreq = function(self, new_freq)
 	if typeof(new_freq) ~= "number" then
 		error("Tried to set timer frequency to a non-number")
@@ -163,6 +166,7 @@ Timer._methods.SetFreq = function(self, new_freq)
 	end
 end
 
+-- Set the offset for a BEAT type timer's start
 Timer._methods.SetOffset = function(self, new_offset)
 	if typeof(new_offset) ~= "number" then
 		error("Tried to set timer offset to a non-number")
@@ -171,10 +175,12 @@ Timer._methods.SetOffset = function(self, new_offset)
 	self._offset = new_offset
 end
 
+-- Get frequency of a BEAT type timer
 Timer._methods.GetFreq = function(self)
 	return self._frequency
 end	
 
+-- Get offset of a BEAT type timer
 Timer._methods.GetOffset = function(self)
 	return self._offset
 end
