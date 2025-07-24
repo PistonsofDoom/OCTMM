@@ -89,6 +89,9 @@ Timer._methods.Enable = function(self, delay)
 	if self._type == nil or self._name == nil then
 		error("Timer type or name was not found. Did you call the method with '.' instead of ':'?")
 	end
+	if self._function == nil then
+		error("Timer missing function to call back to")
+	end
 
 	-- If the timer exists, return as we don't need to add any callbacks
 	if Timer._Callbacks[self._name] ~= nil then
@@ -128,7 +131,7 @@ Timer._methods.Disable = function(self)
 end
 
 -- Wrapper
-Timer._methods.SetEnable = function(self, state, delay)
+Timer._methods.SetEnabled = function(self, state, delay)
 	if state then
 		self.Enable(delay)
 	else
@@ -136,12 +139,44 @@ Timer._methods.SetEnable = function(self, state, delay)
 	end
 end
 
+Timer._methods.SetCallback = function(self, func)
+	if typeof(func) ~= "function" then
+		error("Tried to set timer callback to something besides a function")
+	end
+
+	self._function = func
+end
+
 Timer._methods.SetFreq = function(self, new_freq)
-	
+	if typeof(new_freq) ~= "number" then
+		error("Tried to set timer frequency to a non-number")
+	end
+	if new_freq <= 0 then
+		print("Tried to set timer frequency <= 0, ignoring...")
+		return
+	end
+
+	self._frequency = new_freq
+
+	if Timer._Callbacks[self._name] then
+		Timer._Callbacks[self._name]["frequency"] = self._frequency
+	end
 end
 
 Timer._methods.SetOffset = function(self, new_offset)
-	
+	if typeof(new_offset) ~= "number" then
+		error("Tried to set timer offset to a non-number")
+	end
+
+	self._offset = new_offset
+end
+
+Timer._methods.GetFreq = function(self)
+	return self._frequency
+end	
+
+Timer._methods.GetOffset = function(self)
+	return self._offset
 end
 
 -- 
@@ -158,11 +193,11 @@ end
 --
 function Timer.new(timer_type: String, func, freq, offset)
 	-- Sanity check
-	if timer_type ~= BEAT and timer_type ~= TICK or func == nil then
+	if timer_type ~= BEAT and timer_type ~= TICK then
 		error("Invalid timer type")
 	end
 
-	if func == nil or typeof(func) ~= "function" then
+	if func ~= nil and typeof(func) ~= "function" then
 		error("Provided function was invalid")
 	end
 
@@ -176,6 +211,9 @@ function Timer.new(timer_type: String, func, freq, offset)
 
 	-- Add Generic Methods
 	new_callback.Enable = Timer._methods.Enable
+	new_callback.Disable = Timer._methods.Disable
+	new_callback.SetEnabled = Timer._methods.SetEnabled
+	new_callback.SetCallback = Timer._methods.SetCallback
 
 	-- Add extra functionality for only BEAT types
 	if timer_type == BEAT then
@@ -193,6 +231,9 @@ function Timer.new(timer_type: String, func, freq, offset)
 
 		new_callback.SetFreq = Timer._methods.SetFreq
 		new_callback.SetOffset = Timer._methods.SetOffset
+
+		new_callback.GetFreq = Timer._methods.GetFreq
+		new_callback.GetOffset = Timer._methods.GetOffset
 	end
 
 	return new_callback
