@@ -133,7 +133,6 @@ mod tests {
         let test_program = r#"
             _G.TestValue_Tick = 0
             _G.TestValue_Beat = 0
-            _G.TestValue_Enabled = false
 
             SetBPM(60)
 
@@ -142,19 +141,28 @@ mod tests {
 
             local function tick_callback()
                 _G.TestValue_Tick += 1
+                if _G.TestValue_Tick == 4 then
+                    tick_timer:SetEnabled(false)
+                end
+
+                _G.TickEnabled = tick_timer:GetEnabled()
             end
 
             local function beat_callback()
                 _G.TestValue_Beat += 1
+                if _G.TestValue_Beat == 2 then
+                    beat_timer:Disable()
+                end
+
+                _G.BeatEnabled = beat_timer:GetEnabled()
             end
 
             tick_timer:SetCallback(tick_callback)
             beat_timer:SetCallback(beat_callback)
 
-            tick_timer:Enable()
+            tick_timer:SetEnabled(true)
             beat_timer:Enable()
 
-            _G.TestValue_Enabled = tick_timer:GetEnabled() and beat_timer:GetEnabled()
         "#;
 
         lua.load(test_program)
@@ -188,6 +196,18 @@ mod tests {
                 .expect("Didn't find value"),
             1.0
         );
+        assert_eq!(
+            globals
+                .get::<bool>("TickEnabled")
+                .expect("Didn't find value"),
+            true
+        );
+        assert_eq!(
+            globals
+                .get::<bool>("BeatEnabled")
+                .expect("Didn't find value"),
+            true
+        );
 
         timer.update(&1.0, &lua);
         assert_eq!(
@@ -202,12 +222,57 @@ mod tests {
                 .expect("Didn't find value"),
             2.0
         );
-
         assert_eq!(
             globals
-                .get::<bool>("TestValue_Enabled")
+                .get::<bool>("TickEnabled")
                 .expect("Didn't find value"),
             true
+        );
+        assert_eq!(
+            globals
+                .get::<bool>("BeatEnabled")
+                .expect("Didn't find value"),
+            false
+        );
+
+        timer.update(&3.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Tick")
+                .expect("Didn't find value"),
+            4.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find value"),
+            2.0
+        );
+        assert_eq!(
+            globals
+                .get::<bool>("TickEnabled")
+                .expect("Didn't find value"),
+            false
+        );
+        assert_eq!(
+            globals
+                .get::<bool>("BeatEnabled")
+                .expect("Didn't find value"),
+            false
+        );
+
+        timer.update(&5.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Tick")
+                .expect("Didn't find value"),
+            4.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Beat")
+                .expect("Didn't find value"),
+            2.0
         );
 
         // Failures
