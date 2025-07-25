@@ -18,6 +18,14 @@ impl CallbackType {
             CallbackType::Beat => "beat".to_string(),
         }
     }
+
+    pub fn from_str(input: &str) -> CallbackType {
+        match input {
+            "tick" => CallbackType::Tick,
+            "beat" => CallbackType::Beat,
+            _ => panic!("Invalid callback type {}", input),
+        }
+    }
 }
 
 pub struct TimerModule {}
@@ -25,14 +33,6 @@ pub struct TimerModule {}
 impl TimerModule {
     pub fn new() -> TimerModule {
         TimerModule {}
-    }
-
-    fn type_from_string(from_str: String) -> Option<CallbackType> {
-        match from_str.as_str() {
-            "tick" => Some(CallbackType::Tick),
-            "beat" => Some(CallbackType::Beat),
-            _ => None,
-        }
     }
 }
 
@@ -71,12 +71,11 @@ impl PollingModule for TimerModule {
             let (key, value) = pair.expect("Invalid callback");
             let name: &str = &key.to_string();
 
-            let call_type = TimerModule::type_from_string(
-                value
-                    .get("type")
+            let call_type = CallbackType::from_str(
+                &value
+                    .get::<std::string::String>("type")
                     .expect(format!("Invalid callback type on callback {}:", name).as_str()),
-            )
-            .expect(format!("Invalid callback type on callback {}:", name).as_str());
+            );
             let call_func: Function = value
                 .get("function")
                 .expect(format!("Invalid callback function on callback {}:", name).as_str());
@@ -356,7 +355,9 @@ mod tests {
             timer:Enable()
         "#;
 
-        lua.load(test_program).exec().expect("Failed to load test program: ");
+        lua.load(test_program)
+            .exec()
+            .expect("Failed to load test program: ");
 
         // Test global now
         timer.update(&0.1, &lua);
