@@ -3,12 +3,15 @@ use mlua::{Function, Lua, Table};
 
 const LUA_MODULE: &str = include_str!("timer.luau");
 
+#[derive(PartialEq, Debug)]
 enum CallbackType {
     // Call a callback every time we run update()
     Tick,
     // Call a callback only when time has progressed by
     // a specified amount, calculated from BPM
     Beat,
+    // Invalid callback type
+    Invalid,
 }
 
 impl CallbackType {
@@ -16,6 +19,7 @@ impl CallbackType {
         match self {
             CallbackType::Tick => "tick".to_string(),
             CallbackType::Beat => "beat".to_string(),
+            CallbackType::Invalid => "nil".to_string(),
         }
     }
 
@@ -23,7 +27,7 @@ impl CallbackType {
         match input {
             "tick" => CallbackType::Tick,
             "beat" => CallbackType::Beat,
-            _ => panic!("Invalid callback type {}", input),
+            _ => CallbackType::Invalid,
         }
     }
 }
@@ -112,6 +116,9 @@ impl PollingModule for TimerModule {
                         .as_str(),
                     );
                 }
+                CallbackType::Invalid => {
+                    println!("Tried to run invalid callback type on callback {}, ignoring", name);
+                }
             }
         }
     }
@@ -120,8 +127,21 @@ impl PollingModule for TimerModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{PollingModule, TimerModule};
+    use crate::runner::{PollingModule, TimerModule, timer::CallbackType};
     use mlua::*;
+
+    #[test]
+    fn test_callback_type() {
+        // to_string tests
+        assert_eq!(CallbackType::Tick.to_string(), "tick".to_string());
+        assert_eq!(CallbackType::Beat.to_string(), "beat".to_string());
+        assert_eq!(CallbackType::Invalid.to_string(), "nil".to_string());
+
+        // from_str tests
+        assert_eq!(CallbackType::from_str("tick"), CallbackType::Tick);
+        assert_eq!(CallbackType::from_str("beat"), CallbackType::Beat);
+        assert_eq!(CallbackType::from_str("wrong"), CallbackType::Invalid);
+    }
 
     #[test]
     fn test_rust_module() {
