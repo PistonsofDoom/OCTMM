@@ -1,6 +1,9 @@
 -- Initialize Globals
 _G.Timer = {}
 _G.Timer._Callbacks = {}
+-- Global value that gets updated by the Rust side of the
+-- Timer module. Refers to the amount of time progressed, in
+-- seconds
 _G.Timer._Time = 0.0
 _G.Timer._BPM = 120
 -- Number, acts as a unique id every time its used
@@ -16,6 +19,7 @@ local function getUID()
 end
 
 -- Global Functions
+-- returns the Timer._Time value
 _G.GetTime = function()
 	return Timer._Time
 end
