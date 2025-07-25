@@ -118,7 +118,7 @@ impl PollingModule for TimerModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{PollingModule, TimerModule, timer};
+    use crate::runner::{PollingModule, TimerModule};
     use mlua::*;
 
     #[test]
