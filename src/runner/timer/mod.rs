@@ -4,7 +4,10 @@ use mlua::{Function, Lua, Table};
 const LUA_MODULE: &str = include_str!("timer.luau");
 
 enum CallbackType {
+    // Call a callback every time we run update()
     Tick,
+    // Call a callback only when time has progressed by
+    // a specified amount, calculated from BPM
     Beat,
 }
 
