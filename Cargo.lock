@@ -3,16 +3,6 @@
 version = 4
 
 [[package]]
-name = "OCTMM"
-version = "0.1.0"
-dependencies = [
- "clap",
- "cpal",
- "fundsp",
- "mlua",
-]
-
-[[package]]
 name = "ahash"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -718,6 +708,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "900831247d2fe1a09a683278e5384cfb8c80c79fe6b166f9d14bfdde0ea1b03c"
 dependencies = [
  "objc2",
+]
+
+[[package]]
+name = "octmm"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "cpal",
+ "fundsp",
+ "mlua",
 ]
 
 [[package]]
