@@ -87,6 +87,8 @@ impl Project {
         Ok(())
     }
 
+    /// If a directory exists, check contents and compile the contents of all
+    /// files ending in .luau
     fn get_modules_under_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<String>> {
         let mut modules: Vec<String> = Vec::new();
 
