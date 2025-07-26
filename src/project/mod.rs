@@ -35,6 +35,8 @@ pub struct Project {
     path: PathBuf,
     /// Contents of the Project's program.luau file
     program: String,
+    /// Vector of all the Project's luau modules
+    modules: Vec<String>,
 }
 
 #[allow(dead_code)]
@@ -85,6 +87,48 @@ impl Project {
         Ok(())
     }
 
+    fn get_modules_under_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<String>> {
+        let mut modules: Vec<String> = Vec::new();
+
+        if !dir_path.is_dir() {
+            println!("Tried to get modules under an invalid path, ignoring...");
+            return Ok(modules);
+        }
+
+        for entry in fs::read_dir(dir_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                let sub_modules = Project::get_modules_under_dir(&path);
+
+                if sub_modules.is_ok() {
+                    modules.append(&mut sub_modules.unwrap());
+                }
+            } else {
+                let extension = path.extension();
+
+                if extension.is_none() {
+                    continue;
+                }
+
+                let extension = extension.unwrap().to_str().unwrap_or("");
+                if extension != "luau" {
+                    continue;
+                }
+
+                let contents = fs::read_to_string(path);
+
+                if contents.is_err() {
+                    println!("Error reading file");
+                    continue;
+                }
+                modules.push(contents.unwrap());
+            }
+        }
+
+        return Ok(modules);
+    }
+
     /// Loads a project from a specified directory
     pub fn load(path: &PathBuf) -> ProjectResult {
         let file_name = path.file_name();
@@ -96,6 +140,7 @@ impl Project {
             return Err(ProjectError::BadName("path.file_name".to_string()));
         }
 
+        // User Luau program
         let mut program_path = path.clone();
         program_path.push(FILE_PROGRAM);
         let program_contents = fs::read_to_string(program_path);
@@ -104,10 +149,18 @@ impl Project {
             return Err(ProjectError::NoProgram);
         }
 
+        // Project Luau Modules
+        let mut modules_path = path.clone();
+        modules_path.push(DIR_MODULES);
+
+        let module_contents: Vec<String> =
+            Project::get_modules_under_dir(&modules_path).unwrap_or(Vec::new());
+
         Ok(Project {
             name: file_name.unwrap().to_string(),
             path: path.clone(),
             program: program_contents.unwrap(),
+            modules: module_contents,
         })
     }
 
@@ -121,6 +174,10 @@ impl Project {
 
     pub fn get_program(&self) -> &String {
         &self.program
+    }
+
+    pub fn get_modules(&self) -> &Vec<String> {
+        &self.modules
     }
 }
 
@@ -190,6 +247,33 @@ mod tests {
     }
 
     #[test]
+    fn test_project_get_modules_under_dir() {
+        // Environment Setup
+        let tmp = make_test_dir("project_get_modules_under_dir");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        let mut file1 = tmp.clone();
+        file1.push("file1.luau");
+
+        let mut dir = tmp.clone();
+        dir.push("dir");
+        let mut file2 = dir.clone();
+        file2.push("file2.luau");
+
+        assert!(std::fs::File::create(file1).is_ok());
+
+        assert!(std::fs::create_dir(dir).is_ok());
+        assert!(std::fs::File::create(file2).is_ok());
+
+        // Test function
+        let modules_vec = Project::get_modules_under_dir(&tmp);
+
+        assert!(modules_vec.is_ok());
+        assert_eq!(modules_vec.unwrap().len(), 2);
+    }
+
+    #[test]
     fn test_project_load() {
         // Setup
         let tmp = make_test_dir("project_load");
@@ -209,6 +293,7 @@ mod tests {
         assert_eq!(test.get_name(), &name);
         assert_eq!(test.get_path(), &test_path);
         // todo: test program contents when lua template is created
+        assert_eq!(test.get_modules().len(), 0);
 
         // Test Failure
         let test = Project::load(&tmp);

@@ -82,6 +82,14 @@ impl Runner {
                 }
             }
 
+            // Load project modules
+            for program in self.project.get_modules() {
+                self.lua
+                    .load(program)
+                    .exec()
+                    .expect("Failed to load project module, got\n");
+            }
+
             // Load user program
             self.lua
                 .load(self.project.get_program())
@@ -175,8 +183,17 @@ mod tests {
 
         let mut program = File::create(program_dir).expect("Couldn't create file");
         program
-            .write_all(b"_G.EndSong = true")
-            .expect("Couldn't write to file");
+            .write_all(b"_G.TestFunc()")
+            .expect("Couldn't write to program file");
+
+        // Add module
+        let mut module_dir = proj_dir.clone();
+        module_dir.push(crate::project::DIR_MODULES);
+        module_dir.push("test-module.luau");
+        let mut module= File::create(module_dir).expect("Couldn't create file");
+       module 
+            .write_all(b"_G.TestFunc = function() _G.EndSong = true end")
+            .expect("Couldn't write to module file");
 
         // Load project
         let project = Project::load(&proj_dir).expect("Failed to load project");
