@@ -245,6 +245,33 @@ mod tests {
     }
 
     #[test]
+    fn test_project_get_modules_under_dir() {
+        // Environment Setup
+        let tmp = make_test_dir("project_get_modules_under_dir");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        let mut file1 = tmp.clone();
+        file1.push("file1.luau");
+
+        let mut dir = tmp.clone();
+        dir.push("dir");
+        let mut file2 = dir.clone();
+        file2.push("file2.luau");
+
+        assert!(std::fs::File::create(file1).is_ok());
+
+        assert!(std::fs::create_dir(dir).is_ok());
+        assert!(std::fs::File::create(file2).is_ok());
+
+        // Test function
+        let modules_vec = Project::get_modules_under_dir(&tmp);
+
+        assert!(modules_vec.is_ok());
+        assert_eq!(modules_vec.unwrap().len(), 2);
+    }
+
+    #[test]
     fn test_project_load() {
         // Setup
         let tmp = make_test_dir("project_load");
