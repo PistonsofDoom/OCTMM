@@ -153,7 +153,8 @@ impl Project {
         let mut modules_path = path.clone();
         modules_path.push(DIR_MODULES);
 
-        let module_contents: Vec<String> = Project::get_modules_under_dir(&modules_path).unwrap_or(Vec::new());
+        let module_contents: Vec<String> =
+            Project::get_modules_under_dir(&modules_path).unwrap_or(Vec::new());
 
         Ok(Project {
             name: file_name.unwrap().to_string(),
