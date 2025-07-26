@@ -190,8 +190,8 @@ mod tests {
         let mut module_dir = proj_dir.clone();
         module_dir.push(crate::project::DIR_MODULES);
         module_dir.push("test-module.luau");
-        let mut module= File::create(module_dir).expect("Couldn't create file");
-       module 
+        let mut module = File::create(module_dir).expect("Couldn't create file");
+        module
             .write_all(b"_G.TestFunc = function() _G.EndSong = true end")
             .expect("Couldn't write to module file");
 
