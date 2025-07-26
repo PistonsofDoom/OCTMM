@@ -35,6 +35,8 @@ pub struct Project {
     path: PathBuf,
     /// Contents of the Project's program.luau file
     program: String,
+    /// Vector of all the Project's luau modules
+    modules: Vec<String>,
 }
 
 #[allow(dead_code)]
@@ -151,18 +153,13 @@ impl Project {
         let mut modules_path = path.clone();
         modules_path.push(DIR_MODULES);
 
-        if modules_path.is_dir() {
-           let module_contents = Project::get_modules_under_dir(&modules_path);
-
-           // TODO: Add module_contents to project struct
-        } else {
-            println!("No modules directory found.");
-        }
+        let module_contents: Vec<String> = Project::get_modules_under_dir(&modules_path).unwrap_or(Vec::new());
 
         Ok(Project {
             name: file_name.unwrap().to_string(),
             path: path.clone(),
             program: program_contents.unwrap(),
+            modules: module_contents,
         })
     }
 
@@ -176,6 +173,10 @@ impl Project {
 
     pub fn get_program(&self) -> &String {
         &self.program
+    }
+
+    pub fn get_modules(&self) -> &Vec<String> {
+        &self.modules
     }
 }
 
@@ -291,6 +292,7 @@ mod tests {
         assert_eq!(test.get_name(), &name);
         assert_eq!(test.get_path(), &test_path);
         // todo: test program contents when lua template is created
+        assert_eq!(test.get_modules().len(), 0);
 
         // Test Failure
         let test = Project::load(&tmp);
