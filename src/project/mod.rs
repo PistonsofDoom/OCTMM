@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 /* Constants for directory/file names */
 pub const DIR_MODULES: &str = "modules";
+pub const DIR_SAMPLES: &str = "samples";
 pub const FILE_PROGRAM: &str = "program.luau";
 
 #[derive(Debug)]
@@ -71,6 +72,13 @@ impl Project {
 
         if fs::create_dir(&module_path).is_err() {
             return Err(ProjectError::BadPath(module_path));
+        }
+
+        let mut samples_path = project_path.clone();
+        samples_path.push(DIR_SAMPLES);
+
+        if fs::create_dir(&samples_path).is_err() {
+            return Err(ProjectError::BadPath(samples_path));
         }
 
         // Create files
@@ -185,7 +193,7 @@ impl Project {
 
 #[cfg(test)]
 mod tests {
-    use super::{DIR_MODULES, FILE_PROGRAM};
+    use super::{DIR_MODULES, DIR_SAMPLES, FILE_PROGRAM};
     use crate::{project::Project, test_utils::make_test_dir};
     use std::io::Write;
 
@@ -213,6 +221,10 @@ mod tests {
         let mut modules_dir = test_path.clone();
         modules_dir.push(DIR_MODULES);
         assert!(modules_dir.exists());
+
+        let mut samples_dir = test_path.clone();
+        samples_dir.push(DIR_SAMPLES);
+        assert!(samples_dir.exists());
 
         let mut program_dir = test_path.clone();
         program_dir.push(FILE_PROGRAM);
