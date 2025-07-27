@@ -117,7 +117,10 @@ impl PollingModule for TimerModule {
                     );
                 }
                 CallbackType::Invalid => {
-                    println!("Tried to run invalid callback type on callback {}, ignoring", name);
+                    println!(
+                        "Tried to run invalid callback type on callback {}, ignoring",
+                        name
+                    );
                 }
             }
         }
