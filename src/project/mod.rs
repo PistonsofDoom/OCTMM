@@ -187,6 +187,7 @@ impl Project {
 mod tests {
     use super::{DIR_MODULES, FILE_PROGRAM};
     use crate::{project::Project, test_utils::make_test_dir};
+    use std::io::Write;
 
     #[test]
     fn test_project_create() {
@@ -263,16 +264,21 @@ mod tests {
         let mut file2 = dir.clone();
         file2.push("file2.luau");
 
-        assert!(std::fs::File::create(file1).is_ok());
+        let mut file1 = std::fs::File::create(file1).unwrap();
+        assert!(file1.write_all(b"test").is_ok());
 
         assert!(std::fs::create_dir(dir).is_ok());
-        assert!(std::fs::File::create(file2).is_ok());
+        let mut file2 = std::fs::File::create(file2).unwrap();
+        assert!(file2.write_all(b"test").is_ok());
 
         // Test function
         let modules_vec = Project::get_modules_under_dir(&tmp);
 
         assert!(modules_vec.is_ok());
-        assert_eq!(modules_vec.unwrap().len(), 2);
+        let modules_vec = modules_vec.unwrap();
+        assert_eq!(modules_vec.len(), 2);
+        assert_eq!(&modules_vec[0], "test");
+        assert_eq!(&modules_vec[1], "test");
     }
 
     #[test]
