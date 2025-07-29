@@ -1,3 +1,5 @@
+use fundsp::wave::Wave;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
@@ -38,6 +40,8 @@ pub struct Project {
     program: String,
     /// Vector of all the Project's luau modules
     modules: Vec<String>,
+    /// HashMap of all the Project's samples
+    samples: HashMap<String, Wave>,
 }
 
 #[allow(dead_code)]
@@ -139,6 +143,60 @@ impl Project {
         return Ok(modules);
     }
 
+    /// If a directory exists, check contents and load all
+    /// files ending in .wav
+    fn get_samples_under_dir(dir_path: &std::path::Path) -> std::io::Result<HashMap<String, Wave>> {
+        let mut samples: HashMap<String, Wave> = HashMap::new();
+
+        if !dir_path.is_dir() {
+            println!("Tried to get samples under an invalid path, ignoring...");
+            return Ok(samples);
+        }
+
+        for entry in fs::read_dir(dir_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                let sub_samples = Project::get_samples_under_dir(&path);
+
+                if sub_samples.is_ok() {
+                    samples.extend(sub_samples.unwrap());
+                }
+            } else {
+                let extension = path.extension();
+                let file_name = path.file_stem();
+
+                if extension.is_none() || file_name.is_none() {
+                    continue;
+                }
+
+                let extension = extension.unwrap().to_str().unwrap_or("");
+                let file_name = file_name.unwrap().to_str().unwrap_or("");
+                // Ignore .txt, .md files
+                // Just try and load any other file type, Wave::load
+                // should fail if it is an invalid file
+                if extension == "txt" || extension == "md" || extension == "" || file_name == "" {
+                    continue;
+                }
+
+                let wave = Wave::load(path.clone());
+
+                if wave.is_ok() {
+                    let ret = samples.insert(file_name.to_string(), wave.unwrap());
+
+                    if ret.is_some() {
+                        println!(
+                            "Overwriting sample {}, which was already loaded with {:?}",
+                            file_name, path
+                        );
+                    }
+                }
+            }
+        }
+
+        return Ok(samples);
+    }
+
     /// Loads a project from a specified directory
     pub fn load(path: &PathBuf) -> ProjectResult {
         let file_name = path.file_name();
@@ -165,12 +223,18 @@ impl Project {
 
         let module_contents: Vec<String> =
             Project::get_modules_under_dir(&modules_path).unwrap_or(Vec::new());
+        let mut samples_path = path.clone();
+        samples_path.push(DIR_SAMPLES);
+
+        let sample_contents: HashMap<String, Wave> =
+            Project::get_samples_under_dir(&samples_path).unwrap_or(HashMap::new());
 
         Ok(Project {
             name: file_name.unwrap().to_string(),
             path: path.clone(),
             program: program_contents.unwrap(),
             modules: module_contents,
+            samples: sample_contents,
         })
     }
 
@@ -189,12 +253,17 @@ impl Project {
     pub fn get_modules(&self) -> &Vec<String> {
         &self.modules
     }
+
+    pub fn get_samples(&self) -> &HashMap<String, Wave> {
+        &self.samples
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{DIR_MODULES, DIR_SAMPLES, FILE_PROGRAM};
     use crate::{project::Project, test_utils::make_test_dir};
+    use fundsp::wave::Wave;
     use std::io::Write;
 
     #[test]
@@ -291,6 +360,33 @@ mod tests {
         assert_eq!(modules_vec.len(), 2);
         assert_eq!(&modules_vec[0], "test");
         assert_eq!(&modules_vec[1], "test");
+    }
+
+    #[test]
+    fn test_project_get_samples_under_dir() {
+        // Environment Setup
+        let tmp = make_test_dir("project_get_samples_under_dir");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        let mut test_wave_path = tmp.clone();
+        test_wave_path.push("test_wave.wav");
+
+        let mut test_wave = Wave::new(2, 44100.0);
+
+        test_wave.push((0.0, 0.0));
+        test_wave.push((0.1, 0.1));
+        test_wave.push((0.0, 0.0));
+
+        assert!(test_wave.save_wav16(test_wave_path).is_ok());
+
+        // Test function
+        let samples = Project::get_samples_under_dir(&tmp);
+
+        assert!(samples.is_ok());
+        let samples = samples.unwrap();
+        assert_eq!(samples.len(), 1);
+        assert!(samples.get("test_wave").is_some());
     }
 
     #[test]
