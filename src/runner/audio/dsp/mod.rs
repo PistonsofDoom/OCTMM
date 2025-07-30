@@ -69,14 +69,17 @@ pub struct DspModule {
     shared: HashMap<String, Shared>,
     // Contains a map of unique shared names to network ids
     shared_to_net: HashMap<String, usize>,
+    // String -> Wave HashMap for Samples
+    samples: HashMap<String, Wave>,
 }
 
 impl DspModule {
-    pub fn new() -> DspModule {
+    pub fn new(samples: HashMap<String, Wave>) -> DspModule {
         DspModule {
             nets: NodeType::get_defaults(),
             shared: HashMap::new(),
             shared_to_net: HashMap::new(),
+            samples: samples,
         }
     }
 
@@ -443,11 +446,12 @@ mod tests {
     use crate::runner::{CommandModule, audio::AudioModule};
     use fundsp::hacker32::*;
     use mlua::Lua;
+    use std::collections::HashMap;
 
     /* Shared Testing */
     #[test]
     pub fn test_shared_management() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
         let test_name: String = "test shared".to_string();
 
         // Creation / Exists
@@ -464,7 +468,7 @@ mod tests {
     /* Network Testing */
     #[test]
     pub fn test_net_management() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
 
         let default_length: usize = NodeType::get_defaults().len();
 
@@ -506,7 +510,7 @@ mod tests {
 
     #[test]
     pub fn test_net_functions() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
 
         let hammond = NodeType::Sine.as_net_id().expect("No ID exists");
         let organ = NodeType::Organ.as_net_id().expect("No ID exists");
@@ -565,7 +569,7 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -616,7 +620,7 @@ mod tests {
     fn test_shared_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -658,7 +662,7 @@ mod tests {
     fn test_net_management_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -700,7 +704,7 @@ mod tests {
     fn test_net_proxy_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);

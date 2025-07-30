@@ -31,22 +31,24 @@ pub trait PollingModule {
 }
 
 pub struct Runner {
+    command_modules: [Box<dyn CommandModule>; 1],
+    polling_modules: [Box<dyn PollingModule>; 1],
+
     project: Project,
     now: std::time::Instant,
     lua: Lua,
-    command_modules: [Box<dyn CommandModule>; 1],
-    polling_modules: [Box<dyn PollingModule>; 1],
 }
 
 impl Runner {
     /// Creates a new runner based off a pre-existing project.
     pub fn new(project: Project) -> Runner {
         Runner {
+            command_modules: [Box::new(AudioModule::new(project.get_samples()))],
+            polling_modules: [Box::new(TimerModule::new())],
+
             project: project,
             now: std::time::Instant::now(),
             lua: Lua::new(),
-            command_modules: [Box::new(AudioModule::new())],
-            polling_modules: [Box::new(TimerModule::new())],
         }
     }
 

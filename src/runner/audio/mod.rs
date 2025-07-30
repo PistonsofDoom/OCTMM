@@ -23,11 +23,11 @@ pub struct AudioModule {
 impl AudioModule {
     // TODO: When audio export is implemented, add inputs
     // for mode & bitrate.
-    pub fn new() -> AudioModule {
+    pub fn new(samples: &HashMap<String, Wave>) -> AudioModule {
         AudioModule {
             sequencer: Sequencer::new(false, 1),
             event_map: HashMap::new(),
-            dsp: DspModule::new(),
+            dsp: DspModule::new(samples.clone()),
         }
     }
 }
@@ -208,13 +208,15 @@ impl CommandModule for AudioModule {
 #[cfg(test)]
 mod tests {
     use crate::runner::{CommandModule, audio::AudioModule};
+    use fundsp::wave::Wave;
     use mlua::Lua;
+    use std::collections::HashMap;
 
     #[test]
     pub fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
