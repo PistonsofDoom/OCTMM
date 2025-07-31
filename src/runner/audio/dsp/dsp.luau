@@ -210,13 +210,8 @@ Shared._mt = {}
 -- 		_value: Number
 
 -- Metamethods
-function Shared._mt.__add(a, b)
-	return Net.from(netBus(a._net_id, b._net_id))
-end
-
-function Shared._mt.__mul(a, b)
-	return Net.from(netProduct(a._net_id, b._net_id))
-end
+Shared._mt.__add = Net._mt.__add
+Shared._mt.__mul = Net._mt.__mul
 
 -- Set a value on a shared variable by calling
 -- my_shared_variable(200)
