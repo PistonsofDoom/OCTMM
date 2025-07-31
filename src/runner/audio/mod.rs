@@ -87,13 +87,15 @@ impl AudioModule {
         }
     }
 
-    fn run_output(audio_graph: Box<dyn AudioUnit>) {
+    fn run_output(&mut self, audio_graph: Box<dyn AudioUnit>) {
         let host = cpal::default_host();
 
         let device = host
             .default_output_device()
             .expect("Failed to find a device");
         let config = device.default_output_config().unwrap();
+
+        self.dsp.resample_to_output(config.sample_rate().0 as f64);
 
         match config.sample_format() {
             cpal::SampleFormat::F32 => {
@@ -161,7 +163,7 @@ impl CommandModule for AudioModule {
         // Start playback
         let backend = self.sequencer.backend();
 
-        AudioModule::run_output(Box::new(backend));
+        self.run_output(Box::new(backend));
     }
     fn update(&mut self, time: &f64, lua: &Lua) {
         self.dsp.update(time, lua);

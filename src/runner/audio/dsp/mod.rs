@@ -83,6 +83,28 @@ impl DspModule {
         }
     }
 
+    /// Resample all samples to match the output sample rate
+    pub fn resample_to_output(&mut self, output_sample_rate: f64) {
+        let mut resampled_samples: HashMap<String, Wave> = HashMap::new();
+
+        for (name, sample) in &self.samples {
+            let ratio: f32 = (sample.sample_rate() / output_sample_rate) as f32;
+            let mut dsp_net: Net = Net::new(0, 0);
+
+            for channel in 0..sample.channels() {
+                let dsp_sampled = constant(ratio)
+                    >> resample(wavech(&std::sync::Arc::new(sample.clone()), channel, None));
+                dsp_net = Net::stack(dsp_net, Net::wrap(Box::new(dsp_sampled)));
+            }
+
+            let new_sample = Wave::render(output_sample_rate, sample.duration(), &mut dsp_net);
+
+            resampled_samples.insert(name.clone(), new_sample);
+        }
+
+        self.samples = resampled_samples;
+    }
+
     /* Shared Management */
 
     /// Returns whether a "shared" entry exists or not.
@@ -160,6 +182,22 @@ impl DspModule {
     /// Create a new network that contains a constant of the given value
     pub fn net_constant(&mut self, value: f32) -> usize {
         self.net_from(&Net::wrap(Box::new(constant(value))))
+    }
+
+    pub fn net_from_sample(&mut self, sample_name: &String) -> Option<usize> {
+        let sample = self.samples.get(sample_name);
+
+        if sample.is_none() {
+            return None;
+        }
+
+        let sample = sample.unwrap();
+
+        return Some(self.net_from(&Net::wrap(Box::new(resample(wavech(
+            &std::sync::Arc::new(sample.clone()),
+            0,
+            None,
+        ))))));
     }
 
     pub fn net_vector_length(&self) -> usize {
@@ -339,6 +377,28 @@ impl CommandModule for DspModule {
                     .expect("net_constant, string conversion");
 
                 return self.net_constant(arg_value).to_string();
+            }
+            "net_from_sample" => {
+                let arg_name = arg_vec.get(1).expect("net_from_sample, name not found").to_string();
+                // Get sample, so we can get some information
+                // on it.
+                let sample = self.samples.get(&arg_name);
+
+                if sample.is_none() {
+                    return "nil".to_string();
+                }
+
+                let sample = sample.unwrap();
+                let duration = sample.duration();
+
+                // Get network from the sample
+                let ret = self.net_from_sample(&arg_name);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string() + ";" + &duration.to_string();
             }
             "net_vector_length" => {
                 return self.net_vector_length().to_string();

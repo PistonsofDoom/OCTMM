@@ -49,6 +49,28 @@ local function netConstant(value: Number)
 	return _audio_command_handler("dsp;net_constant;"..tostring(value))
 end
 
+local function netFromSample(value: String)
+	-- Return of net_from_sample is always consistently either "nil", or
+	-- "net_id;duration"
+	local ret = _audio_command_handler("dsp;net_from_sample;"..value)
+
+	if ret == "nil" then
+		return nil
+	end
+	
+	-- Separate return into two parts, the network id, and the duration
+	local ret_array = {}
+	local keys = {"net_id", "duration"}
+	local key_index = 1
+
+	for num_str in string.gmatch(ret, "[^;]+") do
+		ret_array[keys[key_index]] = tonumber(num_str)
+		key_index += 1
+	end
+
+	return ret_array
+end
+
 local function netVectorLength()
 	return _audio_command_handler("dsp;net_vector_length")
 end
@@ -219,6 +241,41 @@ function Shared.new(name:String , value:Number)
 	new_shared._net_id = sharedSetValue(name, value)
 
 	return new_shared
+end
+
+--	Samples
+--		Extension of Net, containing a couple extra methods specifically
+--		related to samples
+--
+Sample = {}
+Sample._mt = {}
+-- Contains:
+-- 		_net_id: Number
+-- 		_name: Sample Name
+-- 		_duration: Number, sample length in time
+Sample._mt.__add = Net._mt.__add
+Sample._mt.__mul = Net._mt.__mul
+Sample._mt.__concat = Net._mt.__concat
+
+-- Return duration of sample
+function Sample._mt.__len(table)
+	return table._duration
+end
+
+function Sample.new(name: String)
+	local new_sample = {}
+
+	local sample_data = netFromSample(name)
+	if sample_data == nil then
+		error("Cannot find sample.. "..name)
+	end
+
+	setmetatable(new_sample, Sample._mt)
+	new_sample._net_id = sample_data.net_id
+	new_sample._name = name
+	new_sample._duration = sample_data.duration
+
+	return new_sample
 end
 
 -- Setup Defaults --
