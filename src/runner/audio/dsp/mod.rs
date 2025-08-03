@@ -184,7 +184,11 @@ impl DspModule {
         self.net_from(&Net::wrap(Box::new(constant(value))))
     }
 
-    pub fn net_from_sample(&mut self, sample_name: &String) -> Option<usize> {
+    pub fn net_from_sample(
+        &mut self,
+        sample_name: &String,
+        loop_point: Option<usize>,
+    ) -> Option<usize> {
         let sample = self.samples.get(sample_name);
 
         if sample.is_none() {
@@ -196,7 +200,7 @@ impl DspModule {
         return Some(self.net_from(&Net::wrap(Box::new(resample(wavech(
             &std::sync::Arc::new(sample.clone()),
             0,
-            None,
+            loop_point,
         ))))));
     }
 
@@ -379,7 +383,12 @@ impl CommandModule for DspModule {
                 return self.net_constant(arg_value).to_string();
             }
             "net_from_sample" => {
-                let arg_name = arg_vec.get(1).expect("net_from_sample, name not found").to_string();
+                let arg_name = arg_vec
+                    .get(1)
+                    .expect("net_from_sample, name not found")
+                    .to_string();
+                let mut arg_loop: Option<usize> = None;
+
                 // Get sample, so we can get some information
                 // on it.
                 let sample = self.samples.get(&arg_name);
@@ -391,8 +400,27 @@ impl CommandModule for DspModule {
                 let sample = sample.unwrap();
                 let duration = sample.duration();
 
+                // Get loop time, if applicable
+                if arg_vec.get(2).is_some() {
+                    let target_loop_time = arg_vec
+                        .get(2)
+                        .expect("net_from_sample, loop not found")
+                        .parse::<f64>()
+                        .expect("net_from_sample, string conversion");
+
+                    if target_loop_time > duration {
+                        println!("Tried to set loop point past duration of the sample.");
+                        return "nil".to_string();
+                    }
+
+                    // percentage of sample duration * total sample count
+                    let target_sample =
+                        ((target_loop_time / duration) * (sample.len() as f64)) as usize;
+                    arg_loop = Some(target_sample);
+                }
+
                 // Get network from the sample
-                let ret = self.net_from_sample(&arg_name);
+                let ret = self.net_from_sample(&arg_name, arg_loop);
 
                 if ret.is_none() {
                     return "nil".to_string();

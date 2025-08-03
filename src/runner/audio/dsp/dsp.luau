@@ -49,10 +49,17 @@ local function netConstant(value: Number)
 	return _audio_command_handler("dsp;net_constant;"..tostring(value))
 end
 
-local function netFromSample(value: String)
+local function netFromSample(value: String, loop_point)
+	-- Parse loop_point
+	if loop_point == nil or typeof(loop_point) ~= "number" then
+		loop_point = ""
+	else
+		loop_point = ";"..tostring(loop_point)
+	end
+
 	-- Return of net_from_sample is always consistently either "nil", or
 	-- "net_id;duration"
-	local ret = _audio_command_handler("dsp;net_from_sample;"..value)
+	local ret = _audio_command_handler("dsp;net_from_sample;"..value..loop_point)
 
 	if ret == "nil" then
 		return nil
@@ -257,12 +264,16 @@ function Sample._mt.__len(table)
 	return table._duration
 end
 
-function Sample.new(name: String)
+-- name: Name of the sample, as represented in the /samples/ directory
+-- loop_point: Point at which the sample should loop back to after reaching
+-- 	the end. If left nil, no loop point is given. Should be in seconds.
+--
+function Sample.new(name: String, loop_point)
 	local new_sample = {}
 
-	local sample_data = netFromSample(name)
+	local sample_data = netFromSample(name, loop_point)
 	if sample_data == nil then
-		error("Cannot find sample.. "..name)
+		error("Cannot find or create sample.. "..name)
 	end
 
 	setmetatable(new_sample, Sample._mt)
