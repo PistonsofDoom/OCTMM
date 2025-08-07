@@ -2,6 +2,7 @@
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
     - Auto Constant.new for numbers + nets
+- Make "time" be based in beats, where a higher BPM = a larger increase in time per update
 - Document all internal lua commands
 - Create template Luau file
   - Update test_project_load to confirm template luau file is created
