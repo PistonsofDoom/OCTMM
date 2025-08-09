@@ -123,6 +123,16 @@ local function netPipe(id1: Number, id2: Number)
 	end
 end
 
+local function netStack(id1: Number, id2: Number)
+	local ret = _audio_command_handler("dsp;net_stack;"..tostring(id1)..";"..tostring(id2))
+
+	if ret == "nil" then
+		return nil
+	else
+		return tonumber(ret)
+	end
+end
+
 local function netCommit(id: Number)
 	_audio_command_handler("dsp;net_commit;"..id)
 end
@@ -137,6 +147,7 @@ end
 --			net1 + net2  - Bus
 --			net1 * net2  - Product
 --			net1 .. net2 - Pipe
+--			net1 // net2 - Stack
 --
 Net = {}
 Net._mt = {}
@@ -154,6 +165,10 @@ end
 
 function Net._mt.__concat(a, b)
 	return Net.from(netPipe(a._net_id, b._net_id))
+end
+
+function Net._mt.__idiv(a, b)
+	return Net.from(netStack(a._net_id, b._net_id))
 end
 
 -- User facing functions

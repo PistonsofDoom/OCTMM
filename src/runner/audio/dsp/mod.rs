@@ -196,12 +196,20 @@ impl DspModule {
         }
 
         let sample = sample.unwrap();
+        let mut net = Net::new(0, 0);
 
-        return Some(self.net_from(&Net::wrap(Box::new(resample(wavech(
-            &std::sync::Arc::new(sample.clone()),
-            0,
-            loop_point,
-        ))))));
+        for channel in 0..sample.channels() {
+            net = Net::stack(
+                net,
+                Net::wrap(Box::new(resample(wavech(
+                    &std::sync::Arc::new(sample.clone()),
+                    channel,
+                    loop_point,
+                )))),
+            );
+        }
+
+        return Some(self.net_from(&net));
     }
 
     pub fn net_vector_length(&self) -> usize {
@@ -275,6 +283,19 @@ impl DspModule {
         }
 
         let new_network = Net::pipe(net_a, net_b);
+        return Some(self.net_from(&new_network));
+    }
+
+    pub fn net_stack(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
+        if !self.net_exists(target_a) || !self.net_exists(target_b) {
+            return None;
+        }
+
+        let net_a = self.nets[target_a].clone();
+        let net_b = self.nets[target_b].clone();
+
+        // We can always stack, no need to check
+        let new_network = Net::stack(net_a, net_b);
         return Some(self.net_from(&new_network));
     }
 
@@ -506,6 +527,26 @@ impl CommandModule for DspModule {
 
                 return ret.unwrap().to_string();
             }
+            "net_stack" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_stack, id not found")
+                    .parse::<usize>()
+                    .expect("net_stack, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_stack, id not found")
+                    .parse::<usize>()
+                    .expect("net_stack, string conversion");
+
+                let ret = self.net_stack(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
             "net_commit" => {
                 let arg_id = arg_vec
                     .get(1)
@@ -647,6 +688,14 @@ mod tests {
 
         let my_network = dsp.net_pipe(sine, my_network.unwrap());
         assert!(my_network.is_some());
+
+        // Test net_stack
+        let my_network = dsp.net_stack(saw, sine);
+        assert!(my_network.is_some());
+
+        let net = &dsp.nets[my_network.unwrap()];
+        assert_eq!(net.inputs(), 2);
+        assert_eq!(net.outputs(), 2);
 
         // Test net_chain
         let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
@@ -843,10 +892,12 @@ mod tests {
                 _G.r1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
                 _G.r2 = _audio_command_handler("dsp;net_bus;1;2")
                 _G.r3 = _audio_command_handler("dsp;net_pipe;1;2")
+                _G.r4 = _audio_command_handler("dsp;net_stack;1;2")
                 -- Failures
-                _G.r4 = _audio_command_handler("dsp;net_product;1;2")
-                _G.r5 = _audio_command_handler("dsp;net_bus;1;100")
-                _G.r6 = _audio_command_handler("dsp;net_pipe;1;100")
+                _G.r5 = _audio_command_handler("dsp;net_product;1;2")
+                _G.r6 = _audio_command_handler("dsp;net_bus;1;100")
+                _G.r7 = _audio_command_handler("dsp;net_pipe;1;100")
+                _G.r8 = _audio_command_handler("dsp;net_stack;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -857,15 +908,19 @@ mod tests {
             let r4 = globals.get::<String>("r4").unwrap();
             let r5 = globals.get::<String>("r5").unwrap();
             let r6 = globals.get::<String>("r6").unwrap();
+            let r7 = globals.get::<String>("r7").unwrap();
+            let r8 = globals.get::<String>("r8").unwrap();
 
             // Successes
             assert_eq!(r1, (NodeType::get_defaults().len() + 1).to_string());
             assert_eq!(r2, (NodeType::get_defaults().len() + 2).to_string());
             assert_eq!(r3, (NodeType::get_defaults().len() + 3).to_string());
+            assert_eq!(r4, (NodeType::get_defaults().len() + 4).to_string());
             // Failures
-            assert_eq!(r4, "nil".to_string());
             assert_eq!(r5, "nil".to_string());
             assert_eq!(r6, "nil".to_string());
+            assert_eq!(r7, "nil".to_string());
+            assert_eq!(r8, "nil".to_string());
 
             Ok(())
         });

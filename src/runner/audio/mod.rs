@@ -25,7 +25,7 @@ impl AudioModule {
     // for mode & bitrate.
     pub fn new(samples: &HashMap<String, Wave>) -> AudioModule {
         AudioModule {
-            sequencer: Sequencer::new(false, 1),
+            sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
             dsp: DspModule::new(samples.clone()),
         }
@@ -54,6 +54,10 @@ impl AudioModule {
                 if net.is_none() {
                     return "nil".to_string();
                 }
+                let mut net = net.unwrap();
+                if net.outputs() == 1 {
+                    net = Net::pipe(net, Net::wrap(Box::new(pan(0.0))));
+                }
 
                 let event_id = self.sequencer.push_relative(
                     0.0,
@@ -61,7 +65,7 @@ impl AudioModule {
                     Fade::Smooth,
                     0.01,
                     0.01,
-                    Box::new(net.unwrap()),
+                    Box::new(net),
                 );
                 let event_name = format!("{:?}", event_id);
 
