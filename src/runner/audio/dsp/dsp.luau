@@ -137,6 +137,18 @@ local function netCommit(id: Number)
 	_audio_command_handler("dsp;net_commit;"..id)
 end
 
+-- If the input is a table, gets _net_id or returns an error
+-- If the input is a number, create a new constant
+local function getNetId(input)
+	if typeof(input) == "number" then
+		return Constant.new(input)._net_id
+	elseif typeof(input) == "table" then
+		return input._net_id
+	else
+		error("Tried to use type '"..typeof(input).."' as a network")
+	end
+end
+
 -- Metatables --
 
 --	Net
@@ -156,19 +168,19 @@ Net._mt = {}
 
 -- Metamethods
 function Net._mt.__add(a, b)
-	return Net.from(netBus(a._net_id, b._net_id))
+	return Net.from(netBus(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__mul(a, b)
-	return Net.from(netProduct(a._net_id, b._net_id))
+	return Net.from(netProduct(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__concat(a, b)
-	return Net.from(netPipe(a._net_id, b._net_id))
+	return Net.from(netPipe(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__idiv(a, b)
-	return Net.from(netStack(a._net_id, b._net_id))
+	return Net.from(netStack(getNetId(a), getNetId(b)))
 end
 
 -- User facing functions
