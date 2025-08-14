@@ -188,6 +188,7 @@ impl DspModule {
         &mut self,
         sample_name: &String,
         loop_point: Option<usize>,
+        channel: Option<usize>,
     ) -> Option<usize> {
         let sample = self.samples.get(sample_name);
 
@@ -198,13 +199,27 @@ impl DspModule {
         let sample = sample.unwrap();
         let mut net = Net::new(0, 0);
 
-        for channel in 0..sample.channels() {
+        // If no channel is specified, just use
+        // all the channels provided within the
+        // sample
+        if channel.is_none() {
+            for channel in 0..sample.channels() {
+                net = Net::stack(
+                    net,
+                    Net::wrap(Box::new(resample(wavech(
+                                    &std::sync::Arc::new(sample.clone()),
+                                    channel,
+                                    loop_point,
+                    )))),
+                );
+            }
+        } else {
             net = Net::stack(
                 net,
                 Net::wrap(Box::new(resample(wavech(
-                    &std::sync::Arc::new(sample.clone()),
-                    channel,
-                    loop_point,
+                                &std::sync::Arc::new(sample.clone()),
+                                channel.unwrap(),
+                                loop_point,
                 )))),
             );
         }
@@ -409,6 +424,7 @@ impl CommandModule for DspModule {
                     .expect("net_from_sample, name not found")
                     .to_string();
                 let mut arg_loop: Option<usize> = None;
+                let mut arg_channel: Option<usize> = None;
 
                 // Get sample, so we can get some information
                 // on it.
@@ -425,23 +441,41 @@ impl CommandModule for DspModule {
                 if arg_vec.get(2).is_some() {
                     let target_loop_time = arg_vec
                         .get(2)
-                        .expect("net_from_sample, loop not found")
-                        .parse::<f64>()
-                        .expect("net_from_sample, string conversion");
+                        .expect("net_from_sample, loop not found");
 
-                    if target_loop_time > duration {
-                        println!("Tried to set loop point past duration of the sample.");
-                        return "nil".to_string();
+                    // We only need a check here, as a user may not want to specify a loop
+                    // while specifying a specific channel.
+                    if target_loop_time != &"nil" {
+                        let target_loop_time = target_loop_time
+                            .parse::<f64>()
+                            .expect("net_from_sample, string conversion");
+
+                        if target_loop_time > duration {
+                            println!("Tried to set loop point past duration of the sample.");
+                            return "nil".to_string();
+                        }
+
+                        // percentage of sample duration * total sample count
+                        let target_sample =
+                            ((target_loop_time / duration) * (sample.len() as f64)) as usize;
+                        arg_loop = Some(target_sample);
+
                     }
-
-                    // percentage of sample duration * total sample count
-                    let target_sample =
-                        ((target_loop_time / duration) * (sample.len() as f64)) as usize;
-                    arg_loop = Some(target_sample);
                 }
 
+                if arg_vec.get(3).is_some() {
+                    let target_channel = arg_vec
+                        .get(3)
+                        .expect("net_from_sample, channel not found")
+                        .parse::<usize>()
+                        .expect("net_from_sample, channel string conversion");
+
+                    arg_channel = Some(target_channel);
+                }
+
+
                 // Get network from the sample
-                let ret = self.net_from_sample(&arg_name, arg_loop);
+                let ret = self.net_from_sample(&arg_name, arg_loop, arg_channel);
 
                 if ret.is_none() {
                     return "nil".to_string();

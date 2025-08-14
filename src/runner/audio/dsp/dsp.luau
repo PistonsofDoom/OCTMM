@@ -49,17 +49,24 @@ local function netConstant(value: Number)
 	return _audio_command_handler("dsp;net_constant;"..tostring(value))
 end
 
-local function netFromSample(value: String, loop_point)
+local function netFromSample(value: String, loop_point, channel)
 	-- Parse loop_point
 	if loop_point == nil or typeof(loop_point) ~= "number" then
-		loop_point = ""
+		loop_point = ";nil"
 	else
 		loop_point = ";"..tostring(loop_point)
 	end
 
+	-- Parse channel 
+	if channel == nil or typeof(channel) ~= "number" then
+		channel = ""
+	else
+		channel = ";"..tostring(channel)
+	end
+
 	-- Return of net_from_sample is always consistently either "nil", or
 	-- "net_id;duration"
-	local ret = _audio_command_handler("dsp;net_from_sample;"..value..loop_point)
+	local ret = _audio_command_handler("dsp;net_from_sample;"..value..loop_point..channel)
 
 	if ret == "nil" then
 		return nil
@@ -294,11 +301,13 @@ end
 -- name: Name of the sample, as represented in the /samples/ directory
 -- loop_point: Point at which the sample should loop back to after reaching
 -- 	the end. If left nil, no loop point is given. Should be in seconds.
+-- channel: If specified, will only use that specific channel of the 
+-- 	sample. Starts at 1.
 --
-function Sample.new(name: String, loop_point)
+function Sample.new(name: String, loop_point, channel)
 	local new_sample = {}
 
-	local sample_data = netFromSample(name, loop_point)
+	local sample_data = netFromSample(name, loop_point, channel - 1)
 	if sample_data == nil then
 		error("Cannot find or create sample.. "..name)
 	end
