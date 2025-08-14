@@ -1,7 +1,6 @@
 
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
-    - Auto Constant.new for numbers + nets
 - Make "time" be based in beats, where a higher BPM = a larger increase in time per update
 - Document all internal lua commands
 - Create template Luau file
@@ -10,3 +9,8 @@
     - Remove todo in audio_module test
 - Update program documentation to be more user friendly
 - Investigate GitHub actions for automatic MdBook compilation (to either github wiki or github pages?)
+
+### AFTER RC/0.1.0 is released
+- Refactor DSP module net functions.
+    - They copy a lot of the same code, and could use a cleanup
+
