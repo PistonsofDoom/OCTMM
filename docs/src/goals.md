@@ -4,11 +4,11 @@
 - [x] CLI Parser
 - [x] MLua crate setup & usage
 - [x] fundsp / Live Audio Integration
-- [ ] Sample Playback
+- [x] Sample Playback
 - [ ] Note Utilities
 - [ ] Audio Exports
 
-### Secondary Goals
+### Potential Secondary Goals
 
 - [ ] Sample slicing functionality, with CLI 
 support for creating and saving \"slice points\" to
