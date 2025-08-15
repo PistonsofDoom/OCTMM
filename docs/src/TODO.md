@@ -2,7 +2,12 @@
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
     - Print a message for any invalid network combinations!
+- Timer module should have a "schedule" function, which refers to scheduling a function to be called after so many beats, once
 - Make "time" be based in beats, where a higher BPM = a larger increase in time per update
+- Note Utilities
+    - Synth Utility
+    - Sample Utility
+
 - Document all internal lua commands
 - Create template Luau file
   - Update test_project_load to confirm template luau file is created
@@ -14,4 +19,6 @@
 ### AFTER RC/0.1.0 is released
 - Refactor DSP module net functions.
     - They copy a lot of the same code, and could use a cleanup
+- Look into wavech_at, see if its a good idea to implement for the program
 
+- 'Log' struct, which should handle all Error, Warning, and Information messages
