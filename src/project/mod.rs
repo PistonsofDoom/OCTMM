@@ -143,8 +143,8 @@ impl Project {
         return Ok(modules);
     }
 
-    /// If a directory exists, check contents and load all
-    /// files ending in .wav
+    /// If a directory exists, check contents and attempts to load all
+    /// files that don't end in .txt, .md, or lack a file extension
     fn get_samples_under_dir(dir_path: &std::path::Path) -> std::io::Result<HashMap<String, Wave>> {
         let mut samples: HashMap<String, Wave> = HashMap::new();
 
