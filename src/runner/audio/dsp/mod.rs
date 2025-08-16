@@ -184,6 +184,8 @@ impl DspModule {
         self.net_from(&Net::wrap(Box::new(constant(value))))
     }
 
+    // This isn't tested in 'cargo test', but is tested
+    // within the audio_module.md test
     pub fn net_from_sample(
         &mut self,
         sample_name: &String,
