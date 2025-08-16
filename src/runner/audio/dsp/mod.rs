@@ -312,8 +312,7 @@ impl DspModule {
         let net_b = self.nets[target_b].clone();
 
         // We can always stack, no need to check
-        let new_network = Net::stack(net_a, net_b);
-        return Some(self.net_from(&new_network));
+        return Some(self.net_from(&Net::stack(net_a, net_b)));
     }
 
     pub fn net_chain(&mut self, target_net: usize, node_type: &NodeType) -> Option<NodeId> {
