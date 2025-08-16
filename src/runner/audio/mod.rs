@@ -54,6 +54,9 @@ impl AudioModule {
                 if net.is_none() {
                     return "nil".to_string();
                 }
+
+                // Check if the network only has one output, 
+                // if so, convert it to stereo
                 let mut net = net.unwrap();
                 if net.outputs() == 1 {
                     net = Net::pipe(net, Net::wrap(Box::new(pan(0.0))));
