@@ -19,8 +19,7 @@
 - Investigate GitHub actions for automatic MdBook compilation (to either github wiki or github pages?)
 
 ### AFTER RC/0.1.0 is released
-- Refactor DSP module net functions.
-    - They copy a lot of the same code, and could use a cleanup
+- Refactor DSP module net functions to reduce repeat code.
 - Look into wavech_at, see if its a good idea to implement for the program
 
 - 'Log' struct, which should handle all Error, Warning, and Information messages
