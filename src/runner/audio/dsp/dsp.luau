@@ -253,6 +253,7 @@ Shared._mt = {}
 -- Metamethods
 Shared._mt.__add = Net._mt.__add
 Shared._mt.__mul = Net._mt.__mul
+Shared._mt.__idiv = Net._mt.__idiv
 
 -- Set a value on a shared variable by calling
 -- my_shared_variable(200)
@@ -291,6 +292,7 @@ Sample._mt = {}
 -- 		_duration: Number, sample length in time
 Sample._mt.__add = Net._mt.__add
 Sample._mt.__mul = Net._mt.__mul
+Sample._mt.__idiv = Net._mt.__idiv
 Sample._mt.__concat = Net._mt.__concat
 
 -- Return duration of sample
