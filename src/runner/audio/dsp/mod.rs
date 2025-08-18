@@ -607,6 +607,26 @@ mod tests {
     use mlua::Lua;
     use std::collections::HashMap;
 
+    #[test]
+    pub fn test_resample_to_output() {
+        // Create initial hashmap
+        let mut test_hashmap = HashMap::<String, Wave>::new();
+        let mut test_wave = Wave::new(2, 22000.0);
+
+        for _ in 0..10 {
+            test_wave.push((0.0, 0.0));
+        }
+
+        test_hashmap.insert("test".to_string(), test_wave);
+
+        // Create dsp module
+        let mut dsp = DspModule::new(test_hashmap);
+        dsp.resample_to_output(44000.0);
+
+        // Confirm proper resample
+        assert_eq!(dsp.samples.get("test").unwrap().len(), 20);
+    }
+
     /* Shared Testing */
     #[test]
     pub fn test_shared_management() {
