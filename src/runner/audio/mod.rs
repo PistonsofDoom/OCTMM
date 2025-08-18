@@ -55,7 +55,7 @@ impl AudioModule {
                     return "nil".to_string();
                 }
 
-                // Check if the network only has one output, 
+                // Check if the network only has one output,
                 // if so, convert it to stereo
                 let mut net = net.unwrap();
                 if net.outputs() == 1 {
