@@ -186,10 +186,14 @@ impl Project {
 
                     if ret.is_some() {
                         println!(
-                            "Overwriting sample {}, which was already loaded with {:?}",
+                            "Overwriting sample \"{}\", which was already loaded with \"{:?}\"",
                             file_name, path
                         );
+                    } else {
+                        println!("Loaded sample \"{}\"", file_name);
                     }
+                } else {
+                    println!("Failed to load sample \"{}\"", file_name);
                 }
             }
         }
