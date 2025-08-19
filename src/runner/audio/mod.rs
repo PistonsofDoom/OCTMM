@@ -23,11 +23,11 @@ pub struct AudioModule {
 impl AudioModule {
     // TODO: When audio export is implemented, add inputs
     // for mode & bitrate.
-    pub fn new() -> AudioModule {
+    pub fn new(samples: &HashMap<String, Wave>) -> AudioModule {
         AudioModule {
-            sequencer: Sequencer::new(false, 1),
+            sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
-            dsp: DspModule::new(),
+            dsp: DspModule::new(samples.clone()),
         }
     }
 }
@@ -55,13 +55,20 @@ impl AudioModule {
                     return "nil".to_string();
                 }
 
+                // Check if the network only has one output,
+                // if so, convert it to stereo
+                let mut net = net.unwrap();
+                if net.outputs() == 1 {
+                    net = Net::pipe(net, Net::wrap(Box::new(pan(0.0))));
+                }
+
                 let event_id = self.sequencer.push_relative(
                     0.0,
                     arg_duration,
                     Fade::Smooth,
                     0.01,
                     0.01,
-                    Box::new(net.unwrap()),
+                    Box::new(net),
                 );
                 let event_name = format!("{:?}", event_id);
 
@@ -87,13 +94,15 @@ impl AudioModule {
         }
     }
 
-    fn run_output(audio_graph: Box<dyn AudioUnit>) {
+    fn run_output(&mut self, audio_graph: Box<dyn AudioUnit>) {
         let host = cpal::default_host();
 
         let device = host
             .default_output_device()
             .expect("Failed to find a device");
         let config = device.default_output_config().unwrap();
+
+        self.dsp.resample_to_output(config.sample_rate().0 as f64);
 
         match config.sample_format() {
             cpal::SampleFormat::F32 => {
@@ -161,7 +170,7 @@ impl CommandModule for AudioModule {
         // Start playback
         let backend = self.sequencer.backend();
 
-        AudioModule::run_output(Box::new(backend));
+        self.run_output(Box::new(backend));
     }
     fn update(&mut self, time: &f64, lua: &Lua) {
         self.dsp.update(time, lua);
@@ -208,13 +217,15 @@ impl CommandModule for AudioModule {
 #[cfg(test)]
 mod tests {
     use crate::runner::{CommandModule, audio::AudioModule};
+    use fundsp::wave::Wave;
     use mlua::Lua;
+    use std::collections::HashMap;
 
     #[test]
     pub fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);

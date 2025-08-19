@@ -49,6 +49,42 @@ local function netConstant(value: Number)
 	return _audio_command_handler("dsp;net_constant;"..tostring(value))
 end
 
+local function netFromSample(value: String, loop_point, channel)
+	-- Parse loop_point
+	if loop_point == nil or typeof(loop_point) ~= "number" then
+		loop_point = ";nil"
+	else
+		loop_point = ";"..tostring(loop_point)
+	end
+
+	-- Parse channel 
+	if channel == nil or typeof(channel) ~= "number" then
+		channel = ""
+	else
+		channel = ";"..tostring(channel)
+	end
+
+	-- Return of net_from_sample is always consistently either "nil", or
+	-- "net_id;duration"
+	local ret = _audio_command_handler("dsp;net_from_sample;"..value..loop_point..channel)
+
+	if ret == "nil" then
+		return nil
+	end
+	
+	-- Separate return into two parts, the network id, and the duration
+	local ret_array = {}
+	local keys = {"net_id", "duration"}
+	local key_index = 1
+
+	for num_str in string.gmatch(ret, "[^;]+") do
+		ret_array[keys[key_index]] = tonumber(num_str)
+		key_index += 1
+	end
+
+	return ret_array
+end
+
 local function netVectorLength()
 	return _audio_command_handler("dsp;net_vector_length")
 end
@@ -94,8 +130,30 @@ local function netPipe(id1: Number, id2: Number)
 	end
 end
 
+local function netStack(id1: Number, id2: Number)
+	local ret = _audio_command_handler("dsp;net_stack;"..tostring(id1)..";"..tostring(id2))
+
+	if ret == "nil" then
+		return nil
+	else
+		return tonumber(ret)
+	end
+end
+
 local function netCommit(id: Number)
 	_audio_command_handler("dsp;net_commit;"..id)
+end
+
+-- If the input is a table, gets _net_id or returns an error
+-- If the input is a number, create a new constant
+local function getNetId(input)
+	if typeof(input) == "number" then
+		return Constant.new(input)._net_id
+	elseif typeof(input) == "table" then
+		return input._net_id
+	else
+		error("Tried to use type '"..typeof(input).."' as a network")
+	end
 end
 
 -- Metatables --
@@ -108,6 +166,7 @@ end
 --			net1 + net2  - Bus
 --			net1 * net2  - Product
 --			net1 .. net2 - Pipe
+--			net1 // net2 - Stack
 --
 Net = {}
 Net._mt = {}
@@ -116,15 +175,19 @@ Net._mt = {}
 
 -- Metamethods
 function Net._mt.__add(a, b)
-	return Net.from(netBus(a._net_id, b._net_id))
+	return Net.from(netBus(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__mul(a, b)
-	return Net.from(netProduct(a._net_id, b._net_id))
+	return Net.from(netProduct(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__concat(a, b)
-	return Net.from(netPipe(a._net_id, b._net_id))
+	return Net.from(netPipe(getNetId(a), getNetId(b)))
+end
+
+function Net._mt.__idiv(a, b)
+	return Net.from(netStack(getNetId(a), getNetId(b)))
 end
 
 -- User facing functions
@@ -188,13 +251,9 @@ Shared._mt = {}
 -- 		_value: Number
 
 -- Metamethods
-function Shared._mt.__add(a, b)
-	return Net.from(netBus(a._net_id, b._net_id))
-end
-
-function Shared._mt.__mul(a, b)
-	return Net.from(netProduct(a._net_id, b._net_id))
-end
+Shared._mt.__add = Net._mt.__add
+Shared._mt.__mul = Net._mt.__mul
+Shared._mt.__idiv = Net._mt.__idiv
 
 -- Set a value on a shared variable by calling
 -- my_shared_variable(200)
@@ -219,6 +278,48 @@ function Shared.new(name:String , value:Number)
 	new_shared._net_id = sharedSetValue(name, value)
 
 	return new_shared
+end
+
+--	Samples
+--		Extension of Net, containing a couple extra methods specifically
+--		related to samples
+--
+Sample = {}
+Sample._mt = {}
+-- Contains:
+-- 		_net_id: Number
+-- 		_name: Sample Name
+-- 		_duration: Number, sample length in time
+Sample._mt.__add = Net._mt.__add
+Sample._mt.__mul = Net._mt.__mul
+Sample._mt.__idiv = Net._mt.__idiv
+Sample._mt.__concat = Net._mt.__concat
+
+-- Return duration of sample
+function Sample._mt.__len(table)
+	return table._duration
+end
+
+-- name: Name of the sample, as represented in the /samples/ directory
+-- loop_point: Point at which the sample should loop back to after reaching
+-- 	the end. If left nil, no loop point is given. Should be in seconds.
+-- channel: If specified, will only use that specific channel of the 
+-- 	sample. Starts at 1.
+--
+function Sample.new(name: String, loop_point, channel)
+	local new_sample = {}
+
+	local sample_data = netFromSample(name, loop_point, channel - 1)
+	if sample_data == nil then
+		error("Cannot find or create sample.. "..name)
+	end
+
+	setmetatable(new_sample, Sample._mt)
+	new_sample._net_id = sample_data.net_id
+	new_sample._name = name
+	new_sample._duration = sample_data.duration
+
+	return new_sample
 end
 
 -- Setup Defaults --

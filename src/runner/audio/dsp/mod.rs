@@ -69,15 +69,40 @@ pub struct DspModule {
     shared: HashMap<String, Shared>,
     // Contains a map of unique shared names to network ids
     shared_to_net: HashMap<String, usize>,
+    // String -> Wave HashMap for Samples
+    samples: HashMap<String, Wave>,
 }
 
 impl DspModule {
-    pub fn new() -> DspModule {
+    pub fn new(samples: HashMap<String, Wave>) -> DspModule {
         DspModule {
             nets: NodeType::get_defaults(),
             shared: HashMap::new(),
             shared_to_net: HashMap::new(),
+            samples: samples,
         }
+    }
+
+    /// Resample all samples to match the output sample rate
+    pub fn resample_to_output(&mut self, output_sample_rate: f64) {
+        let mut resampled_samples: HashMap<String, Wave> = HashMap::new();
+
+        for (name, sample) in &self.samples {
+            let ratio: f32 = (sample.sample_rate() / output_sample_rate) as f32;
+            let mut dsp_net: Net = Net::new(0, 0);
+
+            for channel in 0..sample.channels() {
+                let dsp_sampled = constant(ratio)
+                    >> resample(wavech(&std::sync::Arc::new(sample.clone()), channel, None));
+                dsp_net = Net::stack(dsp_net, Net::wrap(Box::new(dsp_sampled)));
+            }
+
+            let new_sample = Wave::render(output_sample_rate, sample.duration(), &mut dsp_net);
+
+            resampled_samples.insert(name.clone(), new_sample);
+        }
+
+        self.samples = resampled_samples;
     }
 
     /* Shared Management */
@@ -159,6 +184,51 @@ impl DspModule {
         self.net_from(&Net::wrap(Box::new(constant(value))))
     }
 
+    // This isn't tested in 'cargo test', but is tested
+    // within the audio_module.md test
+    pub fn net_from_sample(
+        &mut self,
+        sample_name: &String,
+        loop_point: Option<usize>,
+        channel: Option<usize>,
+    ) -> Option<usize> {
+        let sample = self.samples.get(sample_name);
+
+        if sample.is_none() {
+            return None;
+        }
+
+        let sample = sample.unwrap();
+        let mut net = Net::new(0, 0);
+
+        // If no channel is specified, just use
+        // all the channels provided within the
+        // sample
+        if channel.is_none() {
+            for channel in 0..sample.channels() {
+                net = Net::stack(
+                    net,
+                    Net::wrap(Box::new(resample(wavech(
+                        &std::sync::Arc::new(sample.clone()),
+                        channel,
+                        loop_point,
+                    )))),
+                );
+            }
+        } else {
+            net = Net::stack(
+                net,
+                Net::wrap(Box::new(resample(wavech(
+                    &std::sync::Arc::new(sample.clone()),
+                    channel.unwrap(),
+                    loop_point,
+                )))),
+            );
+        }
+
+        return Some(self.net_from(&net));
+    }
+
     pub fn net_vector_length(&self) -> usize {
         return self.nets.len();
     }
@@ -231,6 +301,18 @@ impl DspModule {
 
         let new_network = Net::pipe(net_a, net_b);
         return Some(self.net_from(&new_network));
+    }
+
+    pub fn net_stack(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
+        if !self.net_exists(target_a) || !self.net_exists(target_b) {
+            return None;
+        }
+
+        let net_a = self.nets[target_a].clone();
+        let net_b = self.nets[target_b].clone();
+
+        // We can always stack, no need to check
+        return Some(self.net_from(&Net::stack(net_a, net_b)));
     }
 
     pub fn net_chain(&mut self, target_net: usize, node_type: &NodeType) -> Option<NodeId> {
@@ -337,6 +419,66 @@ impl CommandModule for DspModule {
 
                 return self.net_constant(arg_value).to_string();
             }
+            "net_from_sample" => {
+                let arg_name = arg_vec
+                    .get(1)
+                    .expect("net_from_sample, name not found")
+                    .to_string();
+                let mut arg_loop: Option<usize> = None;
+                let mut arg_channel: Option<usize> = None;
+
+                // Get sample, so we can get some information
+                // on it.
+                let sample = self.samples.get(&arg_name);
+
+                if sample.is_none() {
+                    return "nil".to_string();
+                }
+
+                let sample = sample.unwrap();
+                let duration = sample.duration();
+
+                // Lua code is expected to always have this filled out. If no loop is wanted,
+                // target_loop_time should be "nil"
+                let target_loop_time = arg_vec.get(2).expect("net_from_sample, loop not found");
+
+                // We only need a check here, as a user may not want to specify a loop
+                // while specifying a specific channel.
+                if target_loop_time != &"nil" {
+                    let target_loop_time = target_loop_time
+                        .parse::<f64>()
+                        .expect("net_from_sample, string conversion");
+
+                    if target_loop_time > duration {
+                        println!("Tried to set loop point past duration of the sample.");
+                        return "nil".to_string();
+                    }
+
+                    // percentage of sample duration * total sample count
+                    let target_sample =
+                        ((target_loop_time / duration) * (sample.len() as f64)) as usize;
+                    arg_loop = Some(target_sample);
+                }
+
+                if arg_vec.get(3).is_some() {
+                    let target_channel = arg_vec
+                        .get(3)
+                        .expect("net_from_sample, channel not found")
+                        .parse::<usize>()
+                        .expect("net_from_sample, channel string conversion");
+
+                    arg_channel = Some(target_channel);
+                }
+
+                // Get network from the sample
+                let ret = self.net_from_sample(&arg_name, arg_loop, arg_channel);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string() + ";" + &duration.to_string();
+            }
             "net_vector_length" => {
                 return self.net_vector_length().to_string();
             }
@@ -415,6 +557,26 @@ impl CommandModule for DspModule {
 
                 return ret.unwrap().to_string();
             }
+            "net_stack" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_stack, id not found")
+                    .parse::<usize>()
+                    .expect("net_stack, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_stack, id not found")
+                    .parse::<usize>()
+                    .expect("net_stack, string conversion");
+
+                let ret = self.net_stack(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
             "net_commit" => {
                 let arg_id = arg_vec
                     .get(1)
@@ -443,11 +605,32 @@ mod tests {
     use crate::runner::{CommandModule, audio::AudioModule};
     use fundsp::hacker32::*;
     use mlua::Lua;
+    use std::collections::HashMap;
+
+    #[test]
+    pub fn test_resample_to_output() {
+        // Create initial hashmap
+        let mut test_hashmap = HashMap::<String, Wave>::new();
+        let mut test_wave = Wave::new(2, 22000.0);
+
+        for _ in 0..10 {
+            test_wave.push((0.0, 0.0));
+        }
+
+        test_hashmap.insert("test".to_string(), test_wave);
+
+        // Create dsp module
+        let mut dsp = DspModule::new(test_hashmap);
+        dsp.resample_to_output(44000.0);
+
+        // Confirm proper resample
+        assert_eq!(dsp.samples.get("test").unwrap().len(), 20);
+    }
 
     /* Shared Testing */
     #[test]
     pub fn test_shared_management() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
         let test_name: String = "test shared".to_string();
 
         // Creation / Exists
@@ -464,7 +647,7 @@ mod tests {
     /* Network Testing */
     #[test]
     pub fn test_net_management() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
 
         let default_length: usize = NodeType::get_defaults().len();
 
@@ -506,7 +689,7 @@ mod tests {
 
     #[test]
     pub fn test_net_functions() {
-        let mut dsp = DspModule::new();
+        let mut dsp = DspModule::new(HashMap::<String, Wave>::new());
 
         let hammond = NodeType::Sine.as_net_id().expect("No ID exists");
         let organ = NodeType::Organ.as_net_id().expect("No ID exists");
@@ -556,6 +739,14 @@ mod tests {
         let my_network = dsp.net_pipe(sine, my_network.unwrap());
         assert!(my_network.is_some());
 
+        // Test net_stack
+        let my_network = dsp.net_stack(saw, sine);
+        assert!(my_network.is_some());
+
+        let net = &dsp.nets[my_network.unwrap()];
+        assert_eq!(net.inputs(), 2);
+        assert_eq!(net.outputs(), 2);
+
         // Test net_chain
         let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
         assert!(my_node_id.is_some());
@@ -565,7 +756,7 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -616,7 +807,7 @@ mod tests {
     fn test_shared_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -658,7 +849,7 @@ mod tests {
     fn test_net_management_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -700,7 +891,7 @@ mod tests {
     fn test_net_proxy_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -748,32 +939,38 @@ mod tests {
             let test_program = r#"
                 local constant = _audio_command_handler("dsp;net_constant;2.0")
                 -- Successes
-                _G.r1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
-                _G.r2 = _audio_command_handler("dsp;net_bus;1;2")
-                _G.r3 = _audio_command_handler("dsp;net_pipe;1;2")
+                _G.s1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
+                _G.s2 = _audio_command_handler("dsp;net_bus;1;2")
+                _G.s3 = _audio_command_handler("dsp;net_pipe;1;2")
+                _G.s4 = _audio_command_handler("dsp;net_stack;1;2")
                 -- Failures
-                _G.r4 = _audio_command_handler("dsp;net_product;1;2")
-                _G.r5 = _audio_command_handler("dsp;net_bus;1;100")
-                _G.r6 = _audio_command_handler("dsp;net_pipe;1;100")
+                _G.f1 = _audio_command_handler("dsp;net_product;1;2")
+                _G.f2 = _audio_command_handler("dsp;net_bus;1;100")
+                _G.f3 = _audio_command_handler("dsp;net_pipe;1;100")
+                _G.f4 = _audio_command_handler("dsp;net_stack;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
 
-            let r1 = globals.get::<String>("r1").unwrap();
-            let r2 = globals.get::<String>("r2").unwrap();
-            let r3 = globals.get::<String>("r3").unwrap();
-            let r4 = globals.get::<String>("r4").unwrap();
-            let r5 = globals.get::<String>("r5").unwrap();
-            let r6 = globals.get::<String>("r6").unwrap();
+            let s1 = globals.get::<String>("s1").unwrap();
+            let s2 = globals.get::<String>("s2").unwrap();
+            let s3 = globals.get::<String>("s3").unwrap();
+            let s4 = globals.get::<String>("s4").unwrap();
+            let f1 = globals.get::<String>("f1").unwrap();
+            let f2 = globals.get::<String>("f2").unwrap();
+            let f3 = globals.get::<String>("f3").unwrap();
+            let f4 = globals.get::<String>("f4").unwrap();
 
             // Successes
-            assert_eq!(r1, (NodeType::get_defaults().len() + 1).to_string());
-            assert_eq!(r2, (NodeType::get_defaults().len() + 2).to_string());
-            assert_eq!(r3, (NodeType::get_defaults().len() + 3).to_string());
+            assert_eq!(s1, (NodeType::get_defaults().len() + 1).to_string());
+            assert_eq!(s2, (NodeType::get_defaults().len() + 2).to_string());
+            assert_eq!(s3, (NodeType::get_defaults().len() + 3).to_string());
+            assert_eq!(s4, (NodeType::get_defaults().len() + 4).to_string());
             // Failures
-            assert_eq!(r4, "nil".to_string());
-            assert_eq!(r5, "nil".to_string());
-            assert_eq!(r6, "nil".to_string());
+            assert_eq!(f1, "nil".to_string());
+            assert_eq!(f2, "nil".to_string());
+            assert_eq!(f3, "nil".to_string());
+            assert_eq!(f4, "nil".to_string());
 
             Ok(())
         });
