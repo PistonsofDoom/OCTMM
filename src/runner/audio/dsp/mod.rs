@@ -939,38 +939,38 @@ mod tests {
             let test_program = r#"
                 local constant = _audio_command_handler("dsp;net_constant;2.0")
                 -- Successes
-                _G.r1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
-                _G.r2 = _audio_command_handler("dsp;net_bus;1;2")
-                _G.r3 = _audio_command_handler("dsp;net_pipe;1;2")
-                _G.r4 = _audio_command_handler("dsp;net_stack;1;2")
+                _G.s1 = _audio_command_handler("dsp;net_product;0;"..tostring(constant))
+                _G.s2 = _audio_command_handler("dsp;net_bus;1;2")
+                _G.s3 = _audio_command_handler("dsp;net_pipe;1;2")
+                _G.s4 = _audio_command_handler("dsp;net_stack;1;2")
                 -- Failures
-                _G.r5 = _audio_command_handler("dsp;net_product;1;2")
-                _G.r6 = _audio_command_handler("dsp;net_bus;1;100")
-                _G.r7 = _audio_command_handler("dsp;net_pipe;1;100")
-                _G.r8 = _audio_command_handler("dsp;net_stack;1;100")
+                _G.f1 = _audio_command_handler("dsp;net_product;1;2")
+                _G.f2 = _audio_command_handler("dsp;net_bus;1;100")
+                _G.f3 = _audio_command_handler("dsp;net_pipe;1;100")
+                _G.f4 = _audio_command_handler("dsp;net_stack;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
 
-            let r1 = globals.get::<String>("r1").unwrap();
-            let r2 = globals.get::<String>("r2").unwrap();
-            let r3 = globals.get::<String>("r3").unwrap();
-            let r4 = globals.get::<String>("r4").unwrap();
-            let r5 = globals.get::<String>("r5").unwrap();
-            let r6 = globals.get::<String>("r6").unwrap();
-            let r7 = globals.get::<String>("r7").unwrap();
-            let r8 = globals.get::<String>("r8").unwrap();
+            let s1 = globals.get::<String>("s1").unwrap();
+            let s2 = globals.get::<String>("s2").unwrap();
+            let s3 = globals.get::<String>("s3").unwrap();
+            let s4 = globals.get::<String>("s4").unwrap();
+            let f1 = globals.get::<String>("f1").unwrap();
+            let f2 = globals.get::<String>("f2").unwrap();
+            let f3 = globals.get::<String>("f3").unwrap();
+            let f4 = globals.get::<String>("f4").unwrap();
 
             // Successes
-            assert_eq!(r1, (NodeType::get_defaults().len() + 1).to_string());
-            assert_eq!(r2, (NodeType::get_defaults().len() + 2).to_string());
-            assert_eq!(r3, (NodeType::get_defaults().len() + 3).to_string());
-            assert_eq!(r4, (NodeType::get_defaults().len() + 4).to_string());
+            assert_eq!(s1, (NodeType::get_defaults().len() + 1).to_string());
+            assert_eq!(s2, (NodeType::get_defaults().len() + 2).to_string());
+            assert_eq!(s3, (NodeType::get_defaults().len() + 3).to_string());
+            assert_eq!(s4, (NodeType::get_defaults().len() + 4).to_string());
             // Failures
-            assert_eq!(r5, "nil".to_string());
-            assert_eq!(r6, "nil".to_string());
-            assert_eq!(r7, "nil".to_string());
-            assert_eq!(r8, "nil".to_string());
+            assert_eq!(f1, "nil".to_string());
+            assert_eq!(f2, "nil".to_string());
+            assert_eq!(f3, "nil".to_string());
+            assert_eq!(f4, "nil".to_string());
 
             Ok(())
         });
