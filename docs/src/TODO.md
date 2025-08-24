@@ -3,7 +3,6 @@
 - Check DSP module for unused functions
     - Print a message for any invalid network combinations!
 - Timer module should have a "schedule" function, which refers to scheduling a function to be called after so many beats, once
-- Make "time" be based in beats, where a higher BPM = a larger increase in time per update
 - Note Utilities
     - Synth Utility
     - Sample Utility
@@ -21,5 +20,7 @@
 ### AFTER RC/0.1.0 is released
 - Refactor DSP module net functions to reduce repeat code.
 - Look into wavech_at, see if its a good idea to implement for the program
+
+- Investigate making "time" be based in beats, where a higher BPM = a larger increase in time per update
 
 - 'Log' struct, which should handle all Error, Warning, and Information messages
