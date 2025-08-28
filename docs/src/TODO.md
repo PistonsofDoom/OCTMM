@@ -2,7 +2,6 @@
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
     - Print a message for any invalid network combinations!
-- Timer module should have a "schedule" function, which refers to scheduling a function to be called after so many beats, once
 - Note Utilities
     - Synth Utility
     - Sample Utility
