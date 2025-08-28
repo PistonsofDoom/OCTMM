@@ -61,9 +61,18 @@ impl PollingModule for TimerModule {
             .get("Timer")
             .expect("Didn't find 'Timer' table");
 
+        // Each entry of callbacks has a 'type' and 'function'
+        // If 'type' is equal to TICK, function gets called every update
+        // If 'type' is equal to BEAT, then the following entries are added:
+        //  'frequency' which is how many beats the program should wait
+        //              before calling
+        //  'time' which is when the function was last called
         let callbacks: Table = timer
             .get("_Callbacks")
             .expect("Didn't find `Timer._Callbacks`");
+        let scheduled: Table = timer
+            .get("_Scheduled")
+            .expect("Didn't find `Timer._Scheduled`");
         let bpm: f64 = timer.get("_BPM").expect("Invalid BPM");
 
         timer
@@ -124,6 +133,29 @@ impl PollingModule for TimerModule {
                 }
             }
         }
+
+        for pair in scheduled.pairs::<String, Table>() {
+            let (key, value) = pair.expect("Invalid Scheduled Event");
+            let name: &str = &key.to_string();
+
+            let call_time: f64 = value.get("time").unwrap_or(0.0);
+            let call_func: Function = value
+                .get("function")
+                .expect(format!("Invalid scheduled function on schedule{}:", name).as_str());
+
+            if &call_time <= time {
+                let time = time.clone();
+                call_func.call::<()>(time).expect(
+                    format!("Error occured while running scheduled function {}:", name).as_str(),
+                );
+
+                let ret = scheduled.set(name, mlua::Value::Nil);
+
+                if ret.is_err() {
+                    panic!("Timer: Failed to set scheduled event to nil");
+                }
+            }
+        }
     }
     fn end(&mut self, _lua: &Lua) {}
 }
@@ -158,6 +190,7 @@ mod tests {
         let test_program = r#"
             _G.TestValue_Tick = 0
             _G.TestValue_Beat = 0
+            _G.TestValue_Schedule = 0
 
             SetBPM(60)
 
@@ -182,12 +215,17 @@ mod tests {
                 _G.BeatEnabled = beat_timer:GetEnabled()
             end
 
+            local function scheduled_callback()
+                _G.TestValue_Schedule += 1
+                Timer.schedule(scheduled_callback, 1.0)
+            end
+
             tick_timer:SetCallback(tick_callback)
             beat_timer:SetCallback(beat_callback)
 
             tick_timer:SetEnabled(true)
             beat_timer:Enable()
-
+            Timer.schedule(scheduled_callback, 1.0)
         "#;
 
         lua.load(test_program)
@@ -233,6 +271,12 @@ mod tests {
                 .expect("Didn't find value"),
             true
         );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Schedule")
+                .expect("Didn't find value"),
+            0.0
+        );
 
         timer.update(&1.0, &lua);
         assert_eq!(
@@ -258,6 +302,12 @@ mod tests {
                 .get::<bool>("BeatEnabled")
                 .expect("Didn't find value"),
             false
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Schedule")
+                .expect("Didn't find value"),
+            1.0
         );
 
         timer.update(&3.0, &lua);
@@ -285,6 +335,12 @@ mod tests {
                 .expect("Didn't find value"),
             false
         );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Schedule")
+                .expect("Didn't find value"),
+            2.0
+        );
 
         timer.update(&5.0, &lua);
         assert_eq!(
@@ -298,6 +354,12 @@ mod tests {
                 .get::<f64>("TestValue_Beat")
                 .expect("Didn't find value"),
             2.0
+        );
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue_Schedule")
+                .expect("Didn't find value"),
+            3.0
         );
 
         // Failures
@@ -615,5 +677,89 @@ mod tests {
         assert!(lua.load(test_program).exec().is_err());
 
         timer.end(&lua);
+    }
+
+    #[test]
+    fn test_schedules() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let timer: &mut dyn PollingModule = &mut TimerModule::new();
+
+        timer.init(&lua);
+
+        // Success
+        let test_program = r#"
+            SetBPM(60.0)
+
+            _G.TestValue1 = 0
+
+            local function scheduler_test()
+                _G.TestValue1 = _G.TestValue1 + 1
+            end
+            
+            Timer.schedule(scheduler_test, 1.0)
+            Timer.schedule(scheduler_test, 1.5)
+        "#;
+
+        lua.load(test_program)
+            .exec()
+            .expect("Failed to run program:");
+
+        // Update timer, check results
+        timer.update(&0.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            0.0
+        );
+
+        timer.update(&1.0, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
+
+        timer.update(&1.4, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            1.0
+        );
+
+        timer.update(&1.5, &lua);
+        assert_eq!(
+            globals
+                .get::<f64>("TestValue1")
+                .expect("Didn't find TIMER TestValue value"),
+            2.0
+        );
+
+        // Failures
+        let test_program = r#"
+            Timer.schedule(20,20)
+        "#;
+        assert!(lua.load(test_program).exec().is_err());
+        let test_program = r#"
+            _G.TestValue = true
+            local function test_func()
+                _G.TestValue = false
+            end
+            Timer.schedule(test_func,-1)
+        "#;
+        lua.load(test_program)
+            .exec()
+            .expect("Failed to run program:");
+        timer.update(&1.5, &lua);
+
+        assert_eq!(
+            globals
+                .get::<bool>("TestValue")
+                .expect("Didn't find TIMER TestValue value"),
+            true
+        );
     }
 }
