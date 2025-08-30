@@ -134,6 +134,7 @@ impl PollingModule for TimerModule {
             }
         }
 
+        // optimization: use Table::for_each
         for pair in scheduled.pairs::<String, Table>() {
             let (key, value) = pair.expect("Invalid Scheduled Event");
             let name: &str = &key.to_string();
