@@ -1,6 +1,7 @@
 -- Initialize Globals
 _G.Timer = {}
 _G.Timer._Callbacks = {}
+_G.Timer._Scheduled = {}
 -- Global value that gets updated by the Rust side of the
 -- Timer module. Refers to the amount of time progressed, in
 -- seconds
@@ -227,4 +228,22 @@ function Timer.new(timer_type: String, func, freq, offset)
 	end
 
 	return new_callback
+end
+
+
+function Timer.schedule(func, beat_delay: number)
+	if func ~= nil and typeof(func) ~= "function" then
+		error("Provided function was invalid")
+	end
+
+	if beat_delay < 0 then
+		print("Tried to schedule with an invalid beat_delay, ignoring.")
+		return
+	end
+
+	local name = getUID()
+
+	Timer._Scheduled[name] = {}
+	Timer._Scheduled[name]["time"] = GetTime() + (beat_delay * (60.0 / GetBPM()))
+	Timer._Scheduled[name]["function"] = func
 end
