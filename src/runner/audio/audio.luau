@@ -61,25 +61,8 @@ local note_names = {
 }
 
 -- Default global scales
-_G.MAJOR = {
-	0,
-	2,
-	4,
-	5,
-	7,
-	9,
-	11
-}
-
-_G.MINOR = {
-	0,
-	2,
-	3,
-	5,
-	7,
-	8,
-	10
-}
+_G.MAJOR = {0,2,4,5,7,9,11}
+_G.MINOR = {0,2,3,5,7,8,10}
 
 -- Default global chords
 _G.MAJOR_TRIAD = {0, 4, 7}
