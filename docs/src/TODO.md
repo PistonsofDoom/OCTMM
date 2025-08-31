@@ -23,3 +23,5 @@
 - Investigate making "time" be based in beats, where a higher BPM = a larger increase in time per update
 
 - 'Log' struct, which should handle all Error, Warning, and Information messages
+
+- 'Note Group' lua class, which is created by adding notes together
