@@ -156,6 +156,12 @@ local function getNetId(input)
 	end
 end
 
+local uid_number = 0
+local function getUID()
+	uid_number += 1
+	return tostring(uid_number)
+end
+
 -- Metatables --
 
 --	Net
@@ -269,13 +275,13 @@ function Shared._mt.__len(table)
 end
 
 -- User facing functions
-function Shared.new(name:String , value:Number)
+function Shared.new(value:Number)
 	local new_shared = {}
 
 	setmetatable(new_shared, Shared._mt)
-	new_shared._name = name
+	new_shared._name = getUID()
 	new_shared._value = value
-	new_shared._net_id = sharedSetValue(name, value)
+	new_shared._net_id = sharedSetValue(new_shared._name, value)
 
 	return new_shared
 end
