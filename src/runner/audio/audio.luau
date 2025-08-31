@@ -29,27 +29,35 @@ end
 
 --[[ Note Utilities ]]--
 
---[[
--- How should this be done?
--- Easily accessible by user (e.g. C4 should refer to the note C4. C4S should refer to C4 sharp)
---
---
---]]
-
--- Note Prefix, whether its sharp, base frequency
+-- base frequency for octave 0, starting at C
 local note_base = {
-	{"C", false, 16.35},
-	{"C", true, 17.32},
-	{"D", false, 18.35},
-	{"D", true, 19.45},
-	{"E", false, 20.60},
-	{"F", false, 21.83},
-	{"F", true, 23.12},
-	{"G", false, 24.50},
-	{"G", true, 25.96},
-	{"A", false, 27.50},
-	{"A", true, 29.14},
-	{"B", false, 30.87}
+	16.35,
+	17.32,
+	18.35,
+	19.45,
+	20.60,
+	21.83,
+	23.12,
+	24.50,
+	25.96,
+	27.50,
+	29.14,
+	30.87
+}
+-- Note Prefix, Whether the note is sharp
+local note_names = {
+	{"C", false},
+	{"C", true},
+	{"D", false},
+	{"D", true},
+	{"E", false},
+	{"F", false},
+	{"F", true},
+	{"G", false},
+	{"G", true},
+	{"A", false},
+	{"A", true},
+	{"B", false}
 }
 
 -- Default global scales
@@ -88,19 +96,12 @@ _G.DIMINISHED_TRIAD = {0, 3, 6}
 _G.DIMINISHED_SEVENTH = {0, 3, 6, 9}
 _G.HALF_DIMINISHED_SEVENTH = {0, 3, 6, 10}
 
-
 -- Initialize Notes
 Note = {}
-Note._mt = {}
 Note._methods = {}
 -- Contains:
 -- 		_index: Number
 -- 		_freq: Number
-
--- Return the "sharp" equivalent of the current note.
-function Note._mt.__len(table)
-	return Note.new(table._index + 1)
-end
 
 function Note._methods.GetFreq(self)
 	return self._freq
@@ -135,15 +136,13 @@ function Note._methods.Chord(self, chord)
 	return new_chord
 end
 
-function Note.new(index)
+function Note.new(index: Number)
 	-- Calculate frequency
 	local start = 1 + ((index-1) % 12)
 	local octave = math.floor(index / 12)
 
 	-- Create table
 	local new_note = {}
-
-	setmetatable(new_note, Note._mt)
 
 	-- Add Generic Methods
 	new_note.Offset = Note._methods.Offset
@@ -153,13 +152,24 @@ function Note.new(index)
 	new_note.GetFreq = Note._methods.GetFreq
 
 	new_note._index = index
-	new_note._freq = note_base[start][3] * math.pow(2, octave)
+	new_note._freq = note_base[start] * math.pow(2, octave)
 
 	return new_note
 end
 
+-- Initialize all default note globals.
+-- e.g. C4, D2, F3s
+
 -- 12 notes per octave, 10 octaves
--- TODO: Implement this
 for i = 1,(12 * 10) do
-	--Note.new(i)
+	local name = note_names[1 + ((i - 1) % 12)]
+	local octave = math.floor(i / 12)
+	
+	if not name[2] then
+		name = name[1]..tostring(octave)
+	else
+		name = name[1].."s"..tostring(octave)
+	end
+
+	_G[name] = Note.new(i)
 end
