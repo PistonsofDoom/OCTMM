@@ -105,7 +105,7 @@ function Note._methods.Scale(self, scale, index: Number)
 	end
 	
 	local note_index = (index % (#scale)) + 1
-	local octave_index = math.floor(index/ (#scale))
+	local octave_index = math.floor(index / (#scale))
 
 	return Note.new(self._index + scale[note_index] + (octave_index * 12))
 end
@@ -141,6 +141,7 @@ function Note.new(index: Number)
 
 	new_note.GetFreq = Note._methods.GetFreq
 
+	-- Setup Variables
 	new_note._index = index
 	new_note._freq = note_base[start] * math.pow(2, octave)
 
