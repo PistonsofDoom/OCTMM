@@ -287,7 +287,9 @@ mod tests {
                 _G.T4 = A4:Chord(MAJOR_TRIAD)[1]:GetFreq()
             "#;
 
-            lua.load(test_program).exec().expect("Test code failed to run");
+            lua.load(test_program)
+                .exec()
+                .expect("Test code failed to run");
             assert_eq!(globals.get::<f64>("T1").unwrap(), 440.0);
             assert_eq!(globals.get::<f64>("T2").unwrap(), 466.24);
             assert_eq!(globals.get::<f64>("T3").unwrap(), 554.24);
