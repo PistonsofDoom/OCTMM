@@ -73,6 +73,22 @@ _G.MINOR = {
 	10
 }
 
+-- Default global chords
+_G.MAJOR_TRIAD = {0, 4, 7}
+_G.MAJOR_SIXTH = {0, 4, 7, 9}
+_G.MAJOR_SEVENTH = {0, 4, 7, 11}
+_G.DOMINANT_SEVENTH = {0, 4, 7, 10}
+_G.AUGMENTED_TRIAD = {0, 4, 8}
+_G.AUGMENTED_SEVENTH = {0, 4, 8, 10}
+_G.MINOR_TRIAD = {0, 3, 7}
+_G.MINOR_SIXTH = {0, 3, 7, 9}
+_G.MINOR_SEVENTH = {0, 3, 7, 10}
+_G.MINOR_MAJOR_SEVENTH = {0, 3, 7, 11}
+_G.DIMINISHED_TRIAD = {0, 3, 6}
+_G.DIMINISHED_SEVENTH = {0, 3, 6, 9}
+_G.HALF_DIMINISHED_SEVENTH = {0, 3, 6, 10}
+
+
 -- Initialize Notes
 Note = {}
 Note._mt = {}
@@ -80,8 +96,6 @@ Note._methods = {}
 -- Contains:
 -- 		_index: Number
 -- 		_freq: Number
-
--- TODO: GetFreq(), Scale(scale array, index), Chord(chord type)
 
 -- Return the "sharp" equivalent of the current note.
 function Note._mt.__len(table)
