@@ -257,4 +257,46 @@ mod tests {
 
         module.end(&lua);
     }
+
+    #[test]
+    pub fn test_lua_note_utility() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let post_init_program = module.get_post_init_program();
+
+        module.init(&lua);
+        module.update(&0.0, &lua);
+
+        let _ = lua.scope(|scope| {
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            lua.load(post_init_program.unwrap())
+                .exec()
+                .expect("Failed to load post init on module, got\n");
+
+            let test_program = r#"
+                _G.T1 = A4:GetFreq()
+                _G.T2 = A4:Offset(1):GetFreq()
+                _G.T3 = A4:Scale(MAJOR, 2):GetFreq()
+                _G.T4 = A4:Chord(MAJOR_TRIAD)[1]:GetFreq()
+            "#;
+
+            lua.load(test_program)
+                .exec()
+                .expect("Test code failed to run");
+            assert_eq!(globals.get::<f64>("T1").unwrap(), 440.0);
+            assert_eq!(globals.get::<f64>("T2").unwrap(), 466.24);
+            assert_eq!(globals.get::<f64>("T3").unwrap(), 554.24);
+            assert_eq!(globals.get::<f64>("T4").unwrap(), 440.0);
+            Ok(())
+        });
+
+        module.end(&lua);
+    }
 }
