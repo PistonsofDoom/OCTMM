@@ -2,8 +2,7 @@
 ### BEFORE RC/0.1.0 is merged
 - Check DSP module for unused functions
     - Print a message for any invalid network combinations!
-- Note Utilities
-    - Synth Utility
+- Synth Utility
     - Sample Utility
     - Sequence Utility
         - Simply provides what amounts to an array with a .step() function that returns the value, and whether or not it looped
