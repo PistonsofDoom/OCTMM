@@ -90,13 +90,18 @@ function Note._methods.GetFreq(self)
 	return self._freq
 end
 
-function Note._methods.Offset(self, offset)
+-- Returns a new note, based off the offset from
+-- the current note.
+function Note._methods.Offset(self, offset: Number)
 	return Note.new(self._index + offset)
 end
 
+-- Returns the next note in a scale, where a scale is
+-- represented as a table of offsets, and index determines
+-- which offset is used
 function Note._methods.Scale(self, scale, index: Number)
 	if typeof(scale) ~= "table" then
-		error("Tried to use a non-table as a Scale")
+		error("Tried to use a non-table as a Note Scale")
 	end
 	
 	local note_index = (index % (#scale)) + 1
@@ -105,9 +110,11 @@ function Note._methods.Scale(self, scale, index: Number)
 	return Note.new(self._index + scale[note_index] + (octave_index * 12))
 end
 
+-- Returns a table of Notes, determined from the "chord" input,
+-- which is a table of offsets.
 function Note._methods.Chord(self, chord)
 	if typeof(chord) ~= "table" then
-		error("Tried to use a non-table as a Chord")
+		error("Tried to use a non-table as a Note Chord")
 	end
 
 	local new_chord = {}
