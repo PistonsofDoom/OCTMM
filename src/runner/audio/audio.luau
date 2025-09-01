@@ -221,10 +221,23 @@ function Instrument._methods._PlayChord(self, notes, duration, amp)
 end
 
 function Instrument._methods.SetFreq(self, index: Number, new_freq: Number)
+	-- If new_freq isn't specified, presume index is actually the new frequency
+	-- and the user wants to adjust voice 1. This allows instruments with
+	-- only one voice to be controlled easily.
+	if new_freq == nil then
+		new_freq = index
+		index = 1
+	end
 	self._voices[index].freq(new_freq)
 end
 
 function Instrument._methods.SetAmp(self, index: Number, new_amp: Number)
+	-- Same as with SetFreq, if new_amp is nil, presume the user is only
+	-- adjusting the first voice channel
+	if new_amp == nil then
+		new_amp = index
+		index = 1
+	end
 	self._voices[index].amp(new_amp)
 end
 
@@ -292,6 +305,12 @@ function Instrument.new(voice_func: Function, voices: Number)
 	local new_instrument = {}
 	new_instrument._voices = {}
 
+	-- Sanity check
+	if voices < 1 then
+		error("Tried to create an instrument with "..tostring(voices)..". Which is less than 1")
+	end
+
+	-- Initialize all voices
 	for i = 1,voices do
 		local voice = {}
 		
@@ -303,6 +322,7 @@ function Instrument.new(voice_func: Function, voices: Number)
 		new_instrument._voices[i] = voice
 	end
 	
+	-- Setup methods
 	new_instrument._FindBestVoice = Instrument._methods._FindBestVoice
 	new_instrument._PlayChord = Instrument._methods._PlayChord
 	new_instrument.SetFreq = Instrument._methods.SetFreq
