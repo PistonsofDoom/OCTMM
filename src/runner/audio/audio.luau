@@ -215,9 +215,12 @@ function Instrument._methods._FindBestVoice(self)
 end
 
 function Instrument._methods._PlayChord(self, notes, duration, amp)
+	local voice_return = {}
 	for _,v in ipairs(notes) do
-		self:Play(v, duration, amp)
+		table.insert(voice_return, self:Play(v, duration, amp))
 	end
+
+	return voice_return
 end
 
 function Instrument._methods.SetFreq(self, index: Number, new_freq: Number)
