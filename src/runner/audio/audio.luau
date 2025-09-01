@@ -19,6 +19,12 @@ function Play(net: Table, duration)
 		duration = 99999
 	end
 
+	-- Force clamp duration
+	if duration < 0.03 then
+		print("Play duration too small, clamping to 0.03")
+		duration = 0.03
+	end
+
 	return play(net_id, duration)
 end
 
@@ -163,4 +169,146 @@ for i = 1,(12 * 10) do
 	end
 
 	_G[name] = Note.new(i)
+end
+
+--[[ Instrument Utilities ]]--
+
+local uid = 0
+
+Instrument = {}
+Instrument._methods = {}
+-- Contains:
+-- 		_voices: {{
+--				freq = Shared Net
+--				amp = Shared Net
+--				net = Voice net
+--				end_time = Time in which this voice "ends". 
+--					AKA, if end_time <= GetTime(), this voice
+--					is open.
+--				event_id = The event id returned by audio Play(),
+--				           not guaranteed to exist
+-- 			}, 
+-- 			..
+-- 			} 
+
+function Instrument._methods._FindBestVoice(self)
+	local time = GetTime()
+	-- Assume best case first
+	local best_voice = nil
+	local lowest_time = nil
+
+	for index,voice in ipairs(self._voices) do
+		local end_time = voice.end_time
+		-- If the voice isn't playing, just return it now.
+		if end_time < time then
+			return {["index"] = index, ["forced"] = false}
+		end
+		
+		-- Otherwise, check if this voice has a lower time.
+		if lowest_time == nil or lowest_time > end_time then
+			best_voice = index
+			lowest_time = end_time
+		end
+	end
+
+	return {["index"] = best_voice, ["forced"] = true}
+end
+
+function Instrument._methods._PlayChord(self, notes, duration, amp)
+	for _,v in ipairs(notes) do
+		self:Play(v, duration, amp)
+	end
+end
+
+function Instrument._methods.SetFreq(self, index: Number, new_freq: Number)
+	self._voices[index].freq(new_freq)
+end
+
+function Instrument._methods.SetAmp(self, index: Number, new_amp: Number)
+	self._voices[index].amp(new_amp)
+end
+
+function Instrument._methods.Play(self, note, duration, amp)
+	-- Process duration
+	if duration == nil then
+		duration = 99999
+	end
+
+	-- Get frequency
+	local freq = 0
+
+	if typeof(note) == "number" then
+		freq = note
+	elseif typeof(note) == "table" then
+		-- If _freq exists, just use that.
+		if note._freq then
+			freq = note._freq
+		-- Otherwise, force use the function _PlayChord(notes, amp)
+		else
+			return self:_PlayChord(note, duration, amp)
+		end
+	end
+
+	-- Get voice
+	local voice = self:_FindBestVoice()
+
+	if voice.forced then
+		self:Stop(voice.index)
+	end
+
+	self:SetFreq(voice.index, freq)
+	-- If applicable, set amplification
+	if amp then
+		self:SetAmp(voice.index, amp)
+	end
+
+	-- Play the sound
+	self._voices[voice.index].event_id = Play(self._voices[voice.index].net, duration)
+	self._voices[voice.index].end_time = GetTime() + duration
+
+	return voice.index
+end
+
+function Instrument._methods.Stop(self, index: Number)
+	local event_id = self._voices[index].event_id
+	
+	if event_id then
+		Stop(event_id)
+	end
+
+	print("Force stopping: "..tostring(index))
+	self._voices[index].end_time = -1.0
+end
+
+
+-- voice_func - The function called whenever a voice is created.
+--              It should always return a Net, and has three inputs.
+--              Frequency, Amplification, and Voice Index
+-- voices - The number of voices the instrument should have.
+--          If a user tries to play a note and there are no more
+--          available voices, it will prematurely stop and then play
+--          the voice that is closest to ending
+function Instrument.new(voice_func: Function, voices: Number)
+	local new_instrument = {}
+	new_instrument._voices = {}
+
+	for i = 1,voices do
+		local voice = {}
+		
+		voice.freq = Shared.new(0.0)
+		voice.amp = Shared.new(0.5)
+		voice.net = voice_func(voice.freq, voice.amp, i)
+		voice.end_time = -1.0
+
+		new_instrument._voices[i] = voice
+	end
+	
+	new_instrument._FindBestVoice = Instrument._methods._FindBestVoice
+	new_instrument._PlayChord = Instrument._methods._PlayChord
+	new_instrument.SetFreq = Instrument._methods.SetFreq
+	new_instrument.SetAmp = Instrument._methods.SetAmp
+	new_instrument.Play = Instrument._methods.Play
+	new_instrument.Stop = Instrument._methods.Stop
+
+	return new_instrument
 end
