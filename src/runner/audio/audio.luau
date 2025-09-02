@@ -244,6 +244,20 @@ function Instrument._methods.SetAmp(self, index: Number, new_amp: Number)
 	self._voices[index].amp(new_amp)
 end
 
+function Instrument._methods.GetFreq(self, index: Number)
+	if index == nil then
+		index = 1
+	end
+	return #self._voices[index].freq
+end
+
+function Instrument._methods.GetAmp(self, index: Number)
+	if index == nil then
+		index = 1
+	end
+	return #self._voices[index].amp
+end
+
 function Instrument._methods.Play(self, note, duration, amp)
 	-- Process duration
 	if duration == nil then
@@ -330,6 +344,8 @@ function Instrument.new(voice_func: Function, voices: Number)
 	new_instrument._PlayChord = Instrument._methods._PlayChord
 	new_instrument.SetFreq = Instrument._methods.SetFreq
 	new_instrument.SetAmp = Instrument._methods.SetAmp
+	new_instrument.GetFreq = Instrument._methods.GetFreq
+	new_instrument.GetAmp = Instrument._methods.GetAmp
 	new_instrument.Play = Instrument._methods.Play
 	new_instrument.Stop = Instrument._methods.Stop
 
