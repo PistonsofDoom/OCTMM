@@ -19,7 +19,7 @@ function Play(net: Table, duration)
 		duration = 99999
 	end
 
-	-- Force clamp duration
+	-- Clamp duration
 	if duration < 0.03 then
 		print("Play duration too small, clamping to 0.03")
 		duration = 0.03
@@ -172,8 +172,6 @@ for i = 1,(12 * 10) do
 end
 
 --[[ Instrument Utilities ]]--
-
-local uid = 0
 
 Instrument = {}
 Instrument._methods = {}
