@@ -189,6 +189,11 @@ Instrument._methods = {}
 -- 			..
 -- 			} 
 
+-- When used, it'll return the "best" voice index.
+-- This is decided in two ways:
+--   Ideally, it'll find an open voice not playing anything.
+--   Worst case, it'll override the voice with the lowest time
+--     remaining in its playback
 function Instrument._methods._FindBestVoice(self)
 	local time = GetTime()
 	-- Assume best case first
@@ -212,6 +217,8 @@ function Instrument._methods._FindBestVoice(self)
 	return {["index"] = best_voice, ["forced"] = true}
 end
 
+-- Simple function that essentially acts as a utility for :Play() when
+-- :Play() is fed a table of notes, instead of just one.
 function Instrument._methods._PlayChord(self, notes, duration, amp)
 	local voice_return = {}
 	for _,v in ipairs(notes) do
@@ -256,6 +263,9 @@ function Instrument._methods.GetAmp(self, index: Number)
 	return #self._voices[index].amp
 end
 
+-- Play an instrument's voice, where note is a required Note, number, or table of notes / numbers.
+-- Duration is the optional length it should play for, and Amp is the optional amplitude of the
+-- note.
 function Instrument._methods.Play(self, note, duration, amp)
 	-- Process duration
 	if duration == nil then
@@ -280,6 +290,9 @@ function Instrument._methods.Play(self, note, duration, amp)
 	-- Get voice
 	local voice = self:_FindBestVoice()
 
+	-- If we're overwriting another voice, it'll be best to stop the currently playing one.
+	-- Otherwise, when we change freq and amplitude, it'll affect the old & new voice, causing
+	-- (most likely) unintentional behavior
 	if voice.forced then
 		self:Stop(voice.index)
 	end
