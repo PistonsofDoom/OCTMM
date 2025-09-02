@@ -285,6 +285,9 @@ function Instrument._methods.Play(self, note, duration, amp)
 		else
 			return self:_PlayChord(note, duration, amp)
 		end
+	else
+		print("Tried to use invalid type '"..typeof(note).."' as frequency. Stopping play attempt.")
+		return nil
 	end
 
 	-- Get voice
