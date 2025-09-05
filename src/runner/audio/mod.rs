@@ -380,4 +380,50 @@ mod tests {
 
         module.end(&lua);
     }
+
+    #[test]
+    pub fn test_lua_sequence_utility() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let post_init_program = module.get_post_init_program();
+
+        module.init(&lua);
+        module.update(&0.0, &lua);
+
+        let _ = lua.scope(|scope| {
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            lua.load(post_init_program.unwrap())
+                .exec()
+                .expect("Failed to load post init on module, got\n");
+
+            let test_program = r#"
+                local test_seq = Sequence.new({1,2,nil,3}, true)
+                local test_seq2 = Sequence.new({1,2,nil,3})
+
+                SUCCESS = test_seq:Step() == 1 and test_seq2:Step() == 1
+                SUCCESS = SUCCESS and test_seq:Step() == 2 and test_seq2:Step() == 2
+                SUCCESS = SUCCESS and test_seq:Step() == nil and test_seq2:Step() == nil 
+                SUCCESS = SUCCESS and test_seq:Step() == 3 and test_seq2:Step() == 3 
+                SUCCESS = SUCCESS and test_seq:Step() == 1 and test_seq2:Step() == nil 
+                test_seq2:SetLoop(1)
+                SUCCESS = SUCCESS and test_seq:Step() == 2 and test_seq2:Step() == nil 
+                SUCCESS = SUCCESS and test_seq:Step() == nil and test_seq2:Step() == 1 
+            "#;
+
+            lua.load(test_program)
+                .exec()
+                .expect("Test code failed to run");
+            assert_eq!(globals.get::<bool>("SUCCESS").unwrap(), true);
+            Ok(())
+        });
+
+        module.end(&lua);
+    }
 }
