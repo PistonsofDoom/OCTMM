@@ -5,7 +5,7 @@
 - [x] MLua crate setup & usage
 - [x] fundsp / Live Audio Integration
 - [x] Sample Playback
-- [ ] Note Utilities
+- [x] Note Utilities
 - [ ] Audio Exports
 
 ### Potential Secondary Goals

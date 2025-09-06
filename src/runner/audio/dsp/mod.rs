@@ -777,7 +777,7 @@ mod tests {
             // NOTE: Improvement could be to check the result to make sure the digital signal
             // network was created correctly
             let test_program = r#"
-                local f = Shared.new("freq", 420)
+                local f = Shared.new(420)
                 local m = Constant.new(0.5)
 
                 local fm_synth = ((f..Sine) * f * m) + f..Sine
@@ -792,7 +792,9 @@ mod tests {
                 _G.SUCCESS = success
             "#;
 
-            assert!(lua.load(test_program).exec().is_ok());
+            lua.load(test_program)
+                .exec()
+                .expect("Failed to execute lua");
             assert!(globals.get::<bool>("SUCCESS").is_ok());
             assert!(globals.get::<bool>("SUCCESS").unwrap());
 
