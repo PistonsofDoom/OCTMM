@@ -1,5 +1,6 @@
 use crate::{project::Project, runner::audio::AudioModule, runner::timer::TimerModule};
 use mlua::Lua;
+use std::path::PathBuf;
 
 mod audio;
 mod timer;
@@ -53,7 +54,7 @@ impl Runner {
     }
 
     /// Load the program and run it
-    pub fn run(&mut self) {
+    pub fn run(&mut self, export: Option<PathBuf>) {
         // Scope for initilization
         let _ = self.lua.scope(|scope| {
             // Initialize all internal modules
@@ -203,6 +204,6 @@ mod tests {
         // Test Runner
         let mut runner = Runner::new(project);
 
-        runner.run();
+        runner.run(None);
     }
 }

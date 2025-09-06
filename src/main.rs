@@ -37,14 +37,33 @@ fn main() {
             let project = Project::load(&path).expect("Couldn't load project");
             let mut runner = Runner::new(project);
 
-            runner.run();
+            runner.run(None);
         }
         Some(Commands::Export(args)) => {
+            let project_path: PathBuf;
+            let export_path: PathBuf;
+
+            // If no paths are specified, just use the current directory
+            if args.project_path.is_none() {
+                project_path = env::current_dir().expect("Couldn't get current directory");
+            } else {
+                project_path = args.project_path.clone().unwrap();
+            }
+            if args.export_path.is_none() {
+                export_path = env::current_dir().expect("Couldn't get current directory");
+            } else {
+                export_path = args.export_path.clone().unwrap();
+            }
+
             println!(
-                "export: {:?}, {:?}, {:?}",
-                args.project_path, args.export_path, args.format
+                "Exporting project at {:?} to {:?}",
+                project_path, export_path
             );
-            println!("unimplemented");
+
+            let project = Project::load(&project_path).expect("Couldn't load project");
+            let mut runner = Runner::new(project);
+
+            runner.run(Some(export_path));
         }
         None => {}
     }
