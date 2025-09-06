@@ -48,7 +48,7 @@ _G.GetBPM = function()
 end
 
 -- GetBPMModifier(
--- ) -> [Number] Current BPM as a Modifier
+-- ) -> [Number] Current BPM as a Modifier to convert Beats to Seconds
 --
 -- Returns the current BPM of the song
 _G.GetBPMModifier = function() 

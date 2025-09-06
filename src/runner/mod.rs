@@ -36,8 +36,9 @@ pub struct Runner {
     polling_modules: [Box<dyn PollingModule>; 1],
 
     project: Project,
-    is_live: bool, // If this is true, audio is being played live.
-    // Otherwise, we are exporting it.
+    // If this is true, audio is being played live.
+    // Otherwise, we are exporting it to a file.
+    is_live: bool, 
     live_now: std::time::Instant,
     // If is_live is false, we use export_time
     export_time: f64,
@@ -132,7 +133,7 @@ impl Runner {
         // Initiate program loop
         let globals = self.lua.globals();
 
-        // Don't use get_time() here, as if somebody is exporting the project,
+        // Don't use get_time() here, as if somebody is exporting the project
         // it will return a garbage value
         println!(
             "Took {} seconds to load project",

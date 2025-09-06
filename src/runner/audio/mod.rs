@@ -75,7 +75,7 @@ pub struct AudioModule {
     event_map: HashMap<String, EventId>,
     // Modules
     dsp: DspModule,
-    // If this is none, we are not exporting.
+    // Utility struct for exporting to a .wav file
     export_manager: ExportManager,
 }
 
@@ -228,16 +228,14 @@ impl CommandModule for AudioModule {
         // Start playback
         let backend = self.sequencer.backend();
 
+        // Playing live
         if self.export_manager.is_live() {
             self.run_output(Box::new(backend));
         }
-        // If we have an export_path, that means we are exporting to
-        // an audio file.
+        // Exporting audio
         else {
             self.sequencer.set_sample_rate(EXPORT_SAMPLE_RATE);
             self.export_manager.init(Box::new(backend));
-            // We know the sample rate we're using is always going
-            // to be EXPORT_SAMPLE_RATE
             self.dsp.resample_to_output(EXPORT_SAMPLE_RATE);
         }
     }
