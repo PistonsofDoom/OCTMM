@@ -298,6 +298,7 @@ function Instrument._methods.Play(self, note, duration, amp)
 	-- Otherwise, when we change freq and amplitude, it'll affect the old & new voice, causing
 	-- (most likely) unintentional behavior
 	if voice.forced then
+		print("Force stopping: "..tostring(voice.index))
 		self:Stop(voice.index)
 	end
 
@@ -321,7 +322,6 @@ function Instrument._methods.Stop(self, index: Number)
 		Stop(event_id)
 	end
 
-	print("Force stopping: "..tostring(index))
 	self._voices[index].end_time = -1.0
 end
 
