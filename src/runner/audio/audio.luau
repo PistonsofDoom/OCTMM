@@ -365,3 +365,63 @@ function Instrument.new(voice_func: Function, voices: Number)
 
 	return new_instrument
 end
+
+--[[ Sequencer Utility ]]--
+
+Sequence = {}
+Sequence._methods = {}
+-- Contains:
+-- 		_array, The array the sequencer acts on
+-- 		_index, the indexer for the array
+-- 		_loop, the loop point of the array, or nil
+
+-- Returns the next index in the array, which may be nil
+function Sequence._methods.Step(self)
+	local to_return = self._array[self._index]
+	local new_index = self._index + 1
+
+	if self._loop and new_index > self._loop then
+		new_index = 1
+	end
+
+	self._index = new_index
+	return to_return
+end
+
+-- loop = boolean / number
+--        if loop is a boolean, and is 'truthy', it will automatically loop once it reaches the end of the array
+--        if loop is a number, it will automatically loop once the index reaches the targetted loop point
+function Sequence._methods.SetLoop(self, loop)
+	if loop then
+		-- If its a number, just set it equal to the loop number
+		if typeof(loop) == "number" then
+			-- No need to check, as if its under 0, it will always just instantly loop
+			self._loop = loop
+		-- Otherwise, assume its a "truthy" variable (e.g., a boolean)
+		-- and autofill
+		else
+			self._loop = #self._array
+		end
+	else
+		self._loop = nil
+	end
+end
+
+-- array = table with any value, but no keys (e.g. {"A", "B", "C"}
+-- loop: see Sequence._methods.SetLoop()
+function Sequence.new(array: Table, loop)
+	local new_sequence = {}
+
+	-- Setup default variable
+	new_sequence._array = array
+	new_sequence._index = 1
+
+	-- Setup methods
+	new_sequence.Step = Sequence._methods.Step
+	new_sequence.SetLoop = Sequence._methods.SetLoop
+
+	-- Setup loop
+	new_sequence:SetLoop(loop)
+
+	return new_sequence
+end
