@@ -65,6 +65,9 @@ fn main() {
 
             runner.run(Some(export_path));
         }
-        None => {}
+        None => {
+            println!("No command found, valid commands are 'create', 'play', and 'export'");
+            println!("Add --help or -h after a command for more information");
+        }
     }
 }
