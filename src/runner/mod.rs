@@ -57,6 +57,14 @@ impl Runner {
         }
     }
 
+    fn initialize_time(&mut self) {
+        self.now = std::time::Instant::now();
+    }
+
+    fn get_time(&mut self) -> f64 {
+        self.now.elapsed().as_millis() as f64 / 1000.0
+    }
+
     /// Load the program and run it
     pub fn run(&mut self) {
         // Scope for initilization
@@ -109,11 +117,11 @@ impl Runner {
 
         // Initiate program loop
         let globals = self.lua.globals();
-        // Compensate for long initilizations
-        let start_millis = self.now.elapsed().as_millis();
 
+        println!("Took {} seconds to load project", self.get_time());
+        self.initialize_time();
         loop {
-            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+            let time_passed: f64 = self.get_time();
 
             // Command update functions
             for module in &mut self.command_modules {
@@ -151,9 +159,10 @@ impl Runner {
                 break;
             }
 
-            // Give the CPU a lil snooze
-            // TODO: add "turbo mode" flag, that removes this delay
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            // Give the CPU a lil snooze if playing live
+            if self.is_live {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
         }
 
         // Call 'end' on all internal modules

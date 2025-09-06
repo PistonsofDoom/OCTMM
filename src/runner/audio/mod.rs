@@ -19,6 +19,9 @@ pub struct AudioModule {
     event_map: HashMap<String, EventId>,
     // Modules
     dsp: DspModule,
+    // If this is none, we are not exporting.
+    // If it is some, create a export.wav file
+    export_path: Option<PathBuf>,
 }
 
 impl AudioModule {
@@ -29,6 +32,7 @@ impl AudioModule {
             sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
             dsp: DspModule::new(samples.clone()),
+            export_path: export,
         }
     }
 }
