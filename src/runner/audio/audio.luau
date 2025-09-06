@@ -388,6 +388,9 @@ function Sequence._methods.Step(self)
 	return to_return
 end
 
+-- loop = boolean / number
+--        if loop is a boolean, and is 'truthy', it will automatically loop once it reaches the end of the array
+--        if loop is a number, it will automatically loop once the index reaches the targetted loop point
 function Sequence._methods.SetLoop(self, loop)
 	if loop then
 		-- If its a number, just set it equal to the loop number
@@ -405,9 +408,7 @@ function Sequence._methods.SetLoop(self, loop)
 end
 
 -- array = table with any value, but no keys (e.g. {"A", "B", "C"}
--- loop = boolean / number
---        if loop is a boolean, and is 'truthy', it will automatically loop once it reaches the end of the array
---        if loop is a number, it will automatically loop once the index reaches the loop point
+-- loop: see Sequence._methods.SetLoop()
 function Sequence.new(array: Table, loop)
 	local new_sequence = {}
 
