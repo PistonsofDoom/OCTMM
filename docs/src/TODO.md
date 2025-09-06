@@ -20,3 +20,4 @@
 - 'Log' struct, which should handle all Error, Warning, and Information messages
 
 - 'Note Group' lua class, which is created by adding notes together
+- Note Utility functions for offsetting frequencies by constant offsets and multipliers
