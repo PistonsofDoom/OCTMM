@@ -10,6 +10,55 @@ mod dsp;
 
 const LUA_MODULE: &str = include_str!("audio.luau");
 
+pub struct ExportManager {
+    export_path: Option<PathBuf>,
+    export_wave: Wave,
+    audio_graph: Box<dyn AudioUnit>,
+}
+
+impl ExportManager {
+    pub fn new(export_pathbuf: Option<PathBuf>) -> ExportManager {
+        ExportManager {
+            export_path: export_pathbuf,
+            export_wave: Wave::new(2, 44100.0), // Stereo, 44100 sample rate.
+            // Initialize with empty sequencer backend
+            // If exportmanager is used, this will be replaced.
+            audio_graph: Box::new(Sequencer::new(false, 2).backend()),
+        }
+    }
+
+    // If export_path exists, we can export, therefore
+    // we are exporting. If export_path is None, we are
+    // playing live.
+    pub fn is_live(&self) -> bool {
+        self.export_path.is_none()
+    }
+
+    // Setup the export environment
+    pub fn init(&mut self, new_audio_graph: Box<dyn AudioUnit>) {
+        // Setup audio graph
+        self.audio_graph = new_audio_graph;
+    }
+
+    // Update the wave file with new samples
+    pub fn update(&mut self) {
+        // Push new samples to the wave
+        for _ in 0..44 {
+            self.export_wave.push(self.audio_graph.get_stereo())
+        }
+    }
+
+    // Export it.
+    pub fn end(&mut self)
+    {
+        let mut export_path = self.export_path.clone().expect("Tried to export without a path somehow...");
+        export_path.push("export.wav");
+        let _ = self.export_wave.save_wav32(export_path).expect("Ran into an issue exporting: ");
+
+        println!("Successfully exported wave file.");
+    }
+}
+
 pub struct AudioModule {
     sequencer: Sequencer,
     // NOTE: Because fundsp doesn't expose any manners in which EventId can be
@@ -20,19 +69,16 @@ pub struct AudioModule {
     // Modules
     dsp: DspModule,
     // If this is none, we are not exporting.
-    // If it is some, create a export.wav file
-    export_path: Option<PathBuf>,
+    export_manager: ExportManager,
 }
 
 impl AudioModule {
-    // TODO: When audio export is implemented, add inputs
-    // for mode & bitrate.
     pub fn new(samples: &HashMap<String, Wave>, export: Option<PathBuf>) -> AudioModule {
         AudioModule {
             sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
             dsp: DspModule::new(samples.clone()),
-            export_path: export,
+            export_manager: ExportManager::new(export),
         }
     }
 }
@@ -175,13 +221,32 @@ impl CommandModule for AudioModule {
         // Start playback
         let backend = self.sequencer.backend();
 
-        self.run_output(Box::new(backend));
+        if self.export_manager.is_live() {
+            self.run_output(Box::new(backend));
+        }
+        // If we have an export_path, that means we are exporting to 
+        // an audio file.
+        else {
+            self.sequencer.set_sample_rate(44100.0);
+            self.export_manager.init(Box::new(backend));
+            // We know the sample rate we're using is always going 
+            // to be 44100.0
+            self.dsp.resample_to_output(44100.0);
+        }
     }
     fn update(&mut self, time: &f64, lua: &Lua) {
         self.dsp.update(time, lua);
+
+        if !self.export_manager.is_live() {
+            self.export_manager.update();
+        }
     }
     fn end(&mut self, lua: &Lua) {
         self.dsp.end(lua);
+
+        if !self.export_manager.is_live() {
+            self.export_manager.end();
+        }
     }
 
     fn get_post_init_program(&self) -> Option<String> {

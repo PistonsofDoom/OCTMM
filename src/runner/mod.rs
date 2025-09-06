@@ -38,7 +38,9 @@ pub struct Runner {
     project: Project,
     is_live: bool, // If this is true, audio is being played live.
     // Otherwise, we are exporting it.
-    now: std::time::Instant,
+    live_now: std::time::Instant,
+    // If is_live is false, we use export_time
+    export_time: f64,
     lua: Lua,
 }
 
@@ -52,17 +54,29 @@ impl Runner {
             polling_modules: [Box::new(TimerModule::new())],
 
             project: project,
-            now: std::time::Instant::now(),
+            live_now: std::time::Instant::now(),
+            export_time: 0.0,
             lua: Lua::new(),
         }
     }
 
     fn initialize_time(&mut self) {
-        self.now = std::time::Instant::now();
+        self.live_now = std::time::Instant::now();
     }
 
     fn get_time(&mut self) -> f64 {
-        self.now.elapsed().as_millis() as f64 / 1000.0
+        if self.is_live {
+            return self.live_now.elapsed().as_millis() as f64 / 1000.0;
+        } else {
+            // Return current time
+            let to_return = self.export_time.clone();
+
+            // Add the equivalent time jump of 44 samples to the time.
+            self.export_time += (44.0/44100.0);
+
+            // Finally return the time
+            return self.export_time;
+        }
     }
 
     /// Load the program and run it
@@ -118,7 +132,9 @@ impl Runner {
         // Initiate program loop
         let globals = self.lua.globals();
 
-        println!("Took {} seconds to load project", self.get_time());
+        // Don't use get_time() here, as if somebody is exporting the project,
+        // it will return a garbage value
+        println!("Took {} seconds to load project", self.live_now.elapsed().as_millis() as f64 / 1000.0);
         self.initialize_time();
         loop {
             let time_passed: f64 = self.get_time();
