@@ -408,6 +408,10 @@ mod tests {
                     return 0.0
                 end
 
+                function _G.GetBPMModifier()
+                    return 1.0
+                end
+
                 local test_inst = Instrument.new(function(freq, amp)
                     return (freq .. Sine) * amp * 0.0
                 end, 3)
