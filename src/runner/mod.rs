@@ -72,10 +72,10 @@ impl Runner {
             let to_return = self.export_time.clone();
 
             // Add the equivalent time jump of 44 samples to the time.
-            self.export_time += (44.0/44100.0);
+            self.export_time += 44.0 / 44100.0;
 
             // Finally return the time
-            return self.export_time;
+            return to_return;
         }
     }
 
@@ -134,7 +134,10 @@ impl Runner {
 
         // Don't use get_time() here, as if somebody is exporting the project,
         // it will return a garbage value
-        println!("Took {} seconds to load project", self.live_now.elapsed().as_millis() as f64 / 1000.0);
+        println!(
+            "Took {} seconds to load project",
+            self.live_now.elapsed().as_millis() as f64 / 1000.0
+        );
         self.initialize_time();
         loop {
             let time_passed: f64 = self.get_time();

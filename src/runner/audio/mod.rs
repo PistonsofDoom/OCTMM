@@ -49,11 +49,16 @@ impl ExportManager {
     }
 
     // Export it.
-    pub fn end(&mut self)
-    {
-        let mut export_path = self.export_path.clone().expect("Tried to export without a path somehow...");
+    pub fn end(&mut self) {
+        let mut export_path = self
+            .export_path
+            .clone()
+            .expect("Tried to export without a path somehow...");
         export_path.push("export.wav");
-        let _ = self.export_wave.save_wav32(export_path).expect("Ran into an issue exporting: ");
+        let _ = self
+            .export_wave
+            .save_wav32(export_path)
+            .expect("Ran into an issue exporting: ");
 
         println!("Successfully exported wave file.");
     }
@@ -224,12 +229,12 @@ impl CommandModule for AudioModule {
         if self.export_manager.is_live() {
             self.run_output(Box::new(backend));
         }
-        // If we have an export_path, that means we are exporting to 
+        // If we have an export_path, that means we are exporting to
         // an audio file.
         else {
             self.sequencer.set_sample_rate(44100.0);
             self.export_manager.init(Box::new(backend));
-            // We know the sample rate we're using is always going 
+            // We know the sample rate we're using is always going
             // to be 44100.0
             self.dsp.resample_to_output(44100.0);
         }
