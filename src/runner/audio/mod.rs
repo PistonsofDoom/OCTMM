@@ -50,8 +50,7 @@ impl ExportManager {
         }
     }
 
-    // Export it.
-    pub fn end(&mut self) {
+    pub fn export(&mut self) {
         let mut export_path = self
             .export_path
             .clone()
@@ -250,7 +249,7 @@ impl CommandModule for AudioModule {
         self.dsp.end(lua);
 
         if !self.export_manager.is_live() {
-            self.export_manager.end();
+            self.export_manager.export();
         }
     }
 
