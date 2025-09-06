@@ -132,7 +132,7 @@ function Note._methods.Chord(self, chord)
 	return new_chord
 end
 
--- Index represents the 'index' of the note, where 1 = C0, 2 = #C0, 12 = C1, etc
+-- Index represents the 'index' of the note, where 1 = C0, 2 = #C0, 13 = C1, etc
 function Note.new(index: Number)
 	-- Calculate frequency
 	local start = 1 + ((index-1) % 12)
