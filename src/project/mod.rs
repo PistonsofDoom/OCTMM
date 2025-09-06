@@ -32,8 +32,6 @@ impl ProjectError {
 pub type ProjectResult = Result<Project, ProjectError>;
 
 pub struct Project {
-    /// Name of the Project
-    name: String,
     /// Path to the directory the Project is stored within
     path: PathBuf,
     /// Contents of the Project's program.luau file
@@ -203,15 +201,6 @@ impl Project {
 
     /// Loads a project from a specified directory
     pub fn load(path: &PathBuf) -> ProjectResult {
-        let file_name = path.file_name();
-        if file_name.is_none() {
-            return Err(ProjectError::BadName("path.file_name".to_string()));
-        }
-        let file_name = file_name.unwrap().to_str();
-        if file_name.is_none() {
-            return Err(ProjectError::BadName("path.file_name".to_string()));
-        }
-
         // User Luau program
         let mut program_path = path.clone();
         program_path.push(FILE_PROGRAM);
@@ -234,16 +223,11 @@ impl Project {
             Project::get_samples_under_dir(&samples_path).unwrap_or(HashMap::new());
 
         Ok(Project {
-            name: file_name.unwrap().to_string(),
             path: path.clone(),
             program: program_contents.unwrap(),
             modules: module_contents,
             samples: sample_contents,
         })
-    }
-
-    pub fn get_name(&self) -> &String {
-        &self.name
     }
 
     pub fn get_path(&self) -> &PathBuf {
@@ -410,7 +394,6 @@ mod tests {
         let test = Project::load(&test_path);
         assert_eq!(test.is_ok(), true);
         let test = test.unwrap();
-        assert_eq!(test.get_name(), &name);
         assert_eq!(test.get_path(), &test_path);
         // todo: test program contents when lua template is created
         assert_eq!(test.get_modules().len(), 0);
