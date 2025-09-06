@@ -35,9 +35,9 @@ fn main() {
             }
 
             let project = Project::load(&path).expect("Couldn't load project");
-            let mut runner = Runner::new(project);
+            let mut runner = Runner::new(project, None);
 
-            runner.run(None);
+            runner.run();
         }
         Some(Commands::Export(args)) => {
             let project_path: PathBuf;
@@ -61,9 +61,9 @@ fn main() {
             );
 
             let project = Project::load(&project_path).expect("Couldn't load project");
-            let mut runner = Runner::new(project);
+            let mut runner = Runner::new(project, Some(export_path));
 
-            runner.run(Some(export_path));
+            runner.run();
         }
         None => {
             println!("No command found, valid commands are 'create', 'play', and 'export'");

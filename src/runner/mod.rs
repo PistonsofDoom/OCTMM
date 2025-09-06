@@ -36,15 +36,19 @@ pub struct Runner {
     polling_modules: [Box<dyn PollingModule>; 1],
 
     project: Project,
+    is_live: bool, // If this is true, audio is being played live.
+    // Otherwise, we are exporting it.
     now: std::time::Instant,
     lua: Lua,
 }
 
 impl Runner {
     /// Creates a new runner based off a pre-existing project.
-    pub fn new(project: Project) -> Runner {
+    pub fn new(project: Project, export: Option<PathBuf>) -> Runner {
         Runner {
-            command_modules: [Box::new(AudioModule::new(project.get_samples()))],
+            is_live: export.is_none(),
+
+            command_modules: [Box::new(AudioModule::new(project.get_samples(), export))],
             polling_modules: [Box::new(TimerModule::new())],
 
             project: project,
@@ -54,7 +58,7 @@ impl Runner {
     }
 
     /// Load the program and run it
-    pub fn run(&mut self, export: Option<PathBuf>) {
+    pub fn run(&mut self) {
         // Scope for initilization
         let _ = self.lua.scope(|scope| {
             // Initialize all internal modules
@@ -202,8 +206,8 @@ mod tests {
         let project = Project::load(&proj_dir).expect("Failed to load project");
 
         // Test Runner
-        let mut runner = Runner::new(project);
+        let mut runner = Runner::new(project, None);
 
-        runner.run(None);
+        runner.run();
     }
 }

@@ -4,6 +4,7 @@ use cpal::{Device, FromSample, SizedSample, StreamConfig};
 use fundsp::hacker32::*;
 use mlua::Lua;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 mod dsp;
 
@@ -23,7 +24,7 @@ pub struct AudioModule {
 impl AudioModule {
     // TODO: When audio export is implemented, add inputs
     // for mode & bitrate.
-    pub fn new(samples: &HashMap<String, Wave>) -> AudioModule {
+    pub fn new(samples: &HashMap<String, Wave>, export: Option<PathBuf>) -> AudioModule {
         AudioModule {
             sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
@@ -225,7 +226,8 @@ mod tests {
     pub fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -262,7 +264,8 @@ mod tests {
     pub fn test_lua_note_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -304,7 +307,8 @@ mod tests {
     pub fn test_lua_instrument_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -385,7 +389,8 @@ mod tests {
     pub fn test_lua_sequence_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
