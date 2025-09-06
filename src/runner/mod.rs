@@ -71,8 +71,8 @@ impl Runner {
             // Return current time
             let to_return = self.export_time.clone();
 
-            // Add the equivalent time jump of 44 samples to the time.
-            self.export_time += 44.0 / 44100.0;
+            // Add the equivalent time jump of xx samples to the time.
+            self.export_time += (audio::SAMPLES_PER_UPDATE as f64) / audio::EXPORT_SAMPLE_RATE;
 
             // Finally return the time
             return to_return;

@@ -8,6 +8,8 @@ use std::path::PathBuf;
 
 mod dsp;
 
+pub const EXPORT_SAMPLE_RATE: f64 = 44100.0;
+pub const SAMPLES_PER_UPDATE: u64 = 44;
 const LUA_MODULE: &str = include_str!("audio.luau");
 
 pub struct ExportManager {
@@ -20,7 +22,7 @@ impl ExportManager {
     pub fn new(export_pathbuf: Option<PathBuf>) -> ExportManager {
         ExportManager {
             export_path: export_pathbuf,
-            export_wave: Wave::new(2, 44100.0), // Stereo, 44100 sample rate.
+            export_wave: Wave::new(2, EXPORT_SAMPLE_RATE),
             // Initialize with empty sequencer backend
             // If exportmanager is used, this will be replaced.
             audio_graph: Box::new(Sequencer::new(false, 2).backend()),
@@ -43,7 +45,7 @@ impl ExportManager {
     // Update the wave file with new samples
     pub fn update(&mut self) {
         // Push new samples to the wave
-        for _ in 0..44 {
+        for _ in 0..SAMPLES_PER_UPDATE {
             self.export_wave.push(self.audio_graph.get_stereo())
         }
     }
@@ -232,11 +234,11 @@ impl CommandModule for AudioModule {
         // If we have an export_path, that means we are exporting to
         // an audio file.
         else {
-            self.sequencer.set_sample_rate(44100.0);
+            self.sequencer.set_sample_rate(EXPORT_SAMPLE_RATE);
             self.export_manager.init(Box::new(backend));
             // We know the sample rate we're using is always going
-            // to be 44100.0
-            self.dsp.resample_to_output(44100.0);
+            // to be EXPORT_SAMPLE_RATE
+            self.dsp.resample_to_output(EXPORT_SAMPLE_RATE);
         }
     }
     fn update(&mut self, time: &f64, lua: &Lua) {
