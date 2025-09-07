@@ -7,9 +7,10 @@ const LUA_MODULE: &str = include_str!("dsp.luau");
 
 #[derive(Debug)]
 /// Used to describe the applicable "base components" that we want to use
-/// Contains oscillators, noise (todo), and filters
+/// Contains oscillators, noise, and filters
 pub enum NodeType {
-    // Oscillators
+    // Single-input
+    // Generators
     Hammond,
     Organ,
     Saw,
@@ -17,6 +18,19 @@ pub enum NodeType {
     SoftSaw,
     Square,
     Triangle,
+    Lorenz,
+    Rossler,
+    Ramp,
+
+    // Dual-input
+    // Generators
+    Pulse,
+
+    // Zero-input
+    // Generators
+    MLS,
+    White,
+    Pink,
 }
 
 impl NodeType {
@@ -29,6 +43,13 @@ impl NodeType {
             NodeType::SoftSaw => Box::new(soft_saw()),
             NodeType::Square => Box::new(square()),
             NodeType::Triangle => Box::new(triangle()),
+            NodeType::Lorenz => Box::new(lorenz()),
+            NodeType::Rossler => Box::new(rossler()),
+            NodeType::Ramp => Box::new(ramp()),
+            NodeType::Pulse => Box::new(pulse()),
+            NodeType::MLS => Box::new(mls()),
+            NodeType::White => Box::new(white()),
+            NodeType::Pink => Box::new(pink()),
         }
     }
 
@@ -43,6 +64,13 @@ impl NodeType {
             NodeType::SoftSaw => Some(4),
             NodeType::Square => Some(5),
             NodeType::Triangle => Some(6),
+            NodeType::Lorenz => Some(7),
+            NodeType::Rossler => Some(8),
+            NodeType::Ramp => Some(9),
+            NodeType::Pulse => Some(10),
+            NodeType::MLS => Some(11),
+            NodeType::White => Some(12),
+            NodeType::Pink => Some(13),
         }
     }
 
@@ -58,6 +86,13 @@ impl NodeType {
             Net::wrap(NodeType::SoftSaw.as_unit()),
             Net::wrap(NodeType::Square.as_unit()),
             Net::wrap(NodeType::Triangle.as_unit()),
+            Net::wrap(NodeType::Lorenz.as_unit()),
+            Net::wrap(NodeType::Rossler.as_unit()),
+            Net::wrap(NodeType::Ramp.as_unit()),
+            Net::wrap(NodeType::Pulse.as_unit()),
+            Net::wrap(NodeType::MLS.as_unit()),
+            Net::wrap(NodeType::White.as_unit()),
+            Net::wrap(NodeType::Pink.as_unit()),
         ])
     }
 }
@@ -159,16 +194,6 @@ impl DspModule {
     pub fn net_from(&mut self, new_network: &Net) -> usize {
         self.nets.push(new_network.clone());
         return self.nets.len() - 1;
-    }
-
-    /// Replace a pre-existing network entry with a new network
-    pub fn net_replace(&mut self, target: usize, new_network: &Net) -> Option<usize> {
-        if !self.net_exists(target) {
-            return None;
-        }
-
-        self.nets[target] = new_network.clone();
-        return Some(target);
     }
 
     pub fn get_net(&self, target: usize) -> Option<Net> {
@@ -313,20 +338,6 @@ impl DspModule {
 
         // We can always stack, no need to check
         return Some(self.net_from(&Net::stack(net_a, net_b)));
-    }
-
-    pub fn net_chain(&mut self, target_net: usize, node_type: &NodeType) -> Option<NodeId> {
-        if !self.net_exists(target_net) {
-            return None;
-        }
-
-        Some(self.nets[target_net].chain(node_type.as_unit()))
-    }
-
-    pub fn net_commit(&mut self, target_net: usize) {
-        if self.net_exists(target_net) && self.nets[target_net].has_backend() {
-            self.nets[target_net].commit();
-        }
     }
 }
 
@@ -487,6 +498,7 @@ impl CommandModule for DspModule {
                 let arg_type = arg_vec.get(1).expect("net_default, type not found");
 
                 return match *arg_type {
+                    // Single-input
                     "hammond" => NodeType::Hammond.as_net_id().unwrap().to_string(),
                     "organ" => NodeType::Organ.as_net_id().unwrap().to_string(),
                     "saw" => NodeType::Saw.as_net_id().unwrap().to_string(),
@@ -494,6 +506,15 @@ impl CommandModule for DspModule {
                     "softsaw" => NodeType::SoftSaw.as_net_id().unwrap().to_string(),
                     "square" => NodeType::Square.as_net_id().unwrap().to_string(),
                     "triangle" => NodeType::Triangle.as_net_id().unwrap().to_string(),
+                    "lorenz" => NodeType::Lorenz.as_net_id().unwrap().to_string(),
+                    "rossler" => NodeType::Rossler.as_net_id().unwrap().to_string(),
+                    "ramp" => NodeType::Ramp.as_net_id().unwrap().to_string(),
+                    // Dual-input
+                    "pulse" => NodeType::Pulse.as_net_id().unwrap().to_string(),
+                    // Zero-input
+                    "mls" => NodeType::MLS.as_net_id().unwrap().to_string(),
+                    "white" => NodeType::White.as_net_id().unwrap().to_string(),
+                    "pink" => NodeType::Pink.as_net_id().unwrap().to_string(),
                     _ => "nil".to_string(),
                 };
             }
@@ -577,15 +598,6 @@ impl CommandModule for DspModule {
 
                 return ret.unwrap().to_string();
             }
-            "net_commit" => {
-                let arg_id = arg_vec
-                    .get(1)
-                    .expect("net_commit, id not found")
-                    .parse::<usize>()
-                    .expect("net_commit, string conversion");
-
-                self.net_commit(arg_id);
-            }
             // Handle bad commands
             _ => {
                 panic!(
@@ -594,8 +606,6 @@ impl CommandModule for DspModule {
                 );
             }
         }
-
-        return "nil".to_string();
     }
 }
 
@@ -671,18 +681,6 @@ mod tests {
         assert!(dsp.get_net(default_length + 200).is_none());
         assert!(dsp.get_net(default_length + 1).is_some());
 
-        // Test net_replace
-        // Should fail, as network doesn't exist here
-        assert!(
-            dsp.net_replace(default_length + 2, &Net::new(5, 5))
-                .is_none()
-        );
-        // Should succeed, as network does exist
-        assert_eq!(
-            dsp.net_replace(default_length, &Net::new(5, 5)),
-            Some(default_length)
-        );
-
         // Test net_constant
         assert_eq!(dsp.net_constant(12.3), default_length + 2);
     }
@@ -746,10 +744,6 @@ mod tests {
         let net = &dsp.nets[my_network.unwrap()];
         assert_eq!(net.inputs(), 2);
         assert_eq!(net.outputs(), 2);
-
-        // Test net_chain
-        let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
-        assert!(my_node_id.is_some());
     }
 
     #[test]
@@ -918,7 +912,14 @@ mod tests {
                 _G.r5 = _audio_command_handler("dsp;net_default;softsaw")
                 _G.r6 = _audio_command_handler("dsp;net_default;square")
                 _G.r7 = _audio_command_handler("dsp;net_default;triangle")
-                _G.r8 = _audio_command_handler("dsp;net_default;badinput")
+                _G.r8 = _audio_command_handler("dsp;net_default;lorenz")
+                _G.r9 = _audio_command_handler("dsp;net_default;rossler")
+                _G.r10 = _audio_command_handler("dsp;net_default;ramp")
+                _G.r11 = _audio_command_handler("dsp;net_default;pulse")
+                _G.r12 = _audio_command_handler("dsp;net_default;mls")
+                _G.r13 = _audio_command_handler("dsp;net_default;white")
+                _G.r14 = _audio_command_handler("dsp;net_default;pink")
+                _G.r15 = _audio_command_handler("dsp;net_default;bad_input")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -931,6 +932,13 @@ mod tests {
             let r6 = globals.get::<String>("r6").unwrap();
             let r7 = globals.get::<String>("r7").unwrap();
             let r8 = globals.get::<String>("r8").unwrap();
+            let r9 = globals.get::<String>("r9").unwrap();
+            let r10 = globals.get::<String>("r10").unwrap();
+            let r11 = globals.get::<String>("r11").unwrap();
+            let r12 = globals.get::<String>("r12").unwrap();
+            let r13 = globals.get::<String>("r13").unwrap();
+            let r14 = globals.get::<String>("r14").unwrap();
+            let r15 = globals.get::<String>("r15").unwrap();
 
             assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
             assert_eq!(r2, NodeType::Organ.as_net_id().unwrap().to_string());
@@ -939,7 +947,14 @@ mod tests {
             assert_eq!(r5, NodeType::SoftSaw.as_net_id().unwrap().to_string());
             assert_eq!(r6, NodeType::Square.as_net_id().unwrap().to_string());
             assert_eq!(r7, NodeType::Triangle.as_net_id().unwrap().to_string());
-            assert_eq!(r8, "nil".to_string());
+            assert_eq!(r8, NodeType::Lorenz.as_net_id().unwrap().to_string());
+            assert_eq!(r9, NodeType::Rossler.as_net_id().unwrap().to_string());
+            assert_eq!(r10, NodeType::Ramp.as_net_id().unwrap().to_string());
+            assert_eq!(r11, NodeType::Pulse.as_net_id().unwrap().to_string());
+            assert_eq!(r12, NodeType::MLS.as_net_id().unwrap().to_string());
+            assert_eq!(r13, NodeType::White.as_net_id().unwrap().to_string());
+            assert_eq!(r14, NodeType::Pink.as_net_id().unwrap().to_string());
+            assert_eq!(r15, "nil".to_string());
 
             // Test all other proxys
             let test_program = r#"

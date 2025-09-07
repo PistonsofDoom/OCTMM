@@ -39,6 +39,7 @@ local function netClone(id: Number)
 	local ret = _audio_command_handler("dsp;net_clone;"..tostring(id))
 
 	if ret == "nil" then
+		print("Net clone error")
 		return nil
 	else
 		return tonumber(ret)
@@ -69,6 +70,7 @@ local function netFromSample(value: String, loop_point, channel)
 	local ret = _audio_command_handler("dsp;net_from_sample;"..value..loop_point..channel)
 
 	if ret == "nil" then
+		print("Net from sample error")
 		return nil
 	end
 	
@@ -94,6 +96,7 @@ local function netDefault(node_type: String)
 	local ret = _audio_command_handler("dsp;net_default;"..node_type)
 
 	if ret == "nil" then
+		print("Net default error")
 		return nil
 	else
 		return tonumber(ret)
@@ -104,6 +107,7 @@ local function netProduct(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_product;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
+		print("Net product error")
 		return nil
 	else
 		return tonumber(ret)
@@ -114,6 +118,7 @@ local function netBus(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_bus;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
+		print("Net bus error")
 		return nil
 	else
 		return tonumber(ret)
@@ -124,6 +129,7 @@ local function netPipe(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_pipe;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
+		print("Net pipe error")
 		return nil
 	else
 		return tonumber(ret)
@@ -134,14 +140,11 @@ local function netStack(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_stack;"..tostring(id1)..";"..tostring(id2))
 
 	if ret == "nil" then
+		print("Net stack error")
 		return nil
 	else
 		return tonumber(ret)
 	end
-end
-
-local function netCommit(id: Number)
-	_audio_command_handler("dsp;net_commit;"..id)
 end
 
 -- If the input is a table, gets _net_id or returns an error
@@ -336,3 +339,10 @@ _G.Sine = Net.from(netDefault("sine"))
 _G.SoftSaw = Net.from(netDefault("softsaw"))
 _G.Square = Net.from(netDefault("square"))
 _G.Triangle = Net.from(netDefault("triangle"))
+_G.Lorenz = Net.from(netDefault("lorenz"))
+_G.Rossler = Net.from(netDefault("rossler"))
+_G.Ramp = Net.from(netDefault("ramp"))
+_G.Pulse = Net.from(netDefault("pulse"))
+_G.MLS = Net.from(netDefault("mls"))
+_G.White = Net.from(netDefault("white"))
+_G.Pink = Net.from(netDefault("pink"))

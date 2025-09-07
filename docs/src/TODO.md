@@ -1,7 +1,6 @@
 
 ### BEFORE RC/0.1.0 is merged
-- Check DSP module for unused functions
-    - Print a message for any invalid network combinations!
+- Add DSP filters & effects
 
 - Document all internal lua commands
 - Create template Luau file
