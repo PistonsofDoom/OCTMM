@@ -38,7 +38,7 @@ pub struct Runner {
     project: Project,
     // If this is true, audio is being played live.
     // Otherwise, we are exporting it to a file.
-    is_live: bool, 
+    is_live: bool,
     live_now: std::time::Instant,
     // If is_live is false, we use export_time
     export_time: f64,

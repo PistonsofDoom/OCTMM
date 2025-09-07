@@ -292,7 +292,9 @@ impl CommandModule for AudioModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{CommandModule, audio::AudioModule};
+    use crate::runner::{CommandModule, audio::AudioModule, audio::ExportManager};
+    use crate::test_utils::make_test_dir;
+    use fundsp::sequencer::Sequencer;
     use fundsp::wave::Wave;
     use mlua::Lua;
     use std::collections::HashMap;
@@ -333,6 +335,36 @@ mod tests {
         });
 
         module.end(&lua);
+    }
+
+    // This provides some basic, rudimentary testing of the export manager.
+    // The real 'comprehensive' test is by manually exporting the example project
+    #[test]
+    pub fn test_export_manager() {
+        let tmp = make_test_dir("export_manager");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        let mut export_manager = ExportManager::new(Some(tmp.clone()));
+        let export_manager_live = ExportManager::new(None);
+
+        // is_live check
+        assert!(!export_manager.is_live());
+        assert!(export_manager_live.is_live());
+
+        // Use empty sequencer
+        export_manager.init(Box::new(Sequencer::new(false, 2).backend()));
+
+        // Call update
+        export_manager.update();
+
+        // Export check
+        export_manager.export();
+
+        let mut file_check = tmp.clone();
+        file_check.push("export.wav");
+
+        assert!(file_check.exists());
     }
 
     #[test]
