@@ -233,10 +233,21 @@ mod tests {
 
         // Load project
         let project = Project::load(&proj_dir).expect("Failed to load project");
-
         // Test Runner
         let mut runner = Runner::new(project, None);
 
         runner.run();
+
+        // Load project
+        let project = Project::load(&proj_dir).expect("Failed to load project");
+        // Test Runner Export
+        let mut runner = Runner::new(project, Some(tmp.clone()));
+
+        runner.run();
+
+        let mut export_file = tmp.clone();
+        export_file.push("export.wav");
+
+        assert!(export_file.exists());
     }
 }
