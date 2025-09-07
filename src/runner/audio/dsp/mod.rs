@@ -21,6 +21,7 @@ pub enum NodeType {
     Lorenz,
     Rossler,
     Ramp,
+
     // Dual-input
     // Generators
     Pulse,
