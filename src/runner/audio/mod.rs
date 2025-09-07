@@ -238,6 +238,7 @@ impl CommandModule for AudioModule {
             self.dsp.resample_to_output(EXPORT_SAMPLE_RATE);
         }
     }
+
     fn update(&mut self, time: &f64, lua: &Lua) {
         self.dsp.update(time, lua);
 
@@ -245,6 +246,7 @@ impl CommandModule for AudioModule {
             self.export_manager.update();
         }
     }
+
     fn end(&mut self, lua: &Lua) {
         self.dsp.end(lua);
 
