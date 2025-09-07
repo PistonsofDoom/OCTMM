@@ -9,7 +9,7 @@ const LUA_MODULE: &str = include_str!("dsp.luau");
 /// Used to describe the applicable "base components" that we want to use
 /// Contains oscillators, noise, and filters
 pub enum NodeType {
-    // Single-input 
+    // Single-input
     // Generators
     Hammond,
     Organ,
@@ -493,7 +493,7 @@ impl CommandModule for DspModule {
                 let arg_type = arg_vec.get(1).expect("net_default, type not found");
 
                 return match *arg_type {
-                    // Single-input 
+                    // Single-input
                     "hammond" => NodeType::Hammond.as_net_id().unwrap().to_string(),
                     "organ" => NodeType::Organ.as_net_id().unwrap().to_string(),
                     "saw" => NodeType::Saw.as_net_id().unwrap().to_string(),
