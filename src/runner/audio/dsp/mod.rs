@@ -508,7 +508,9 @@ impl CommandModule for DspModule {
                     "lorenz" => NodeType::Lorenz.as_net_id().unwrap().to_string(),
                     "rossler" => NodeType::Rossler.as_net_id().unwrap().to_string(),
                     "ramp" => NodeType::Ramp.as_net_id().unwrap().to_string(),
+                    // Dual-input
                     "pulse" => NodeType::Pulse.as_net_id().unwrap().to_string(),
+                    // Zero-input
                     "mls" => NodeType::MLS.as_net_id().unwrap().to_string(),
                     "white" => NodeType::White.as_net_id().unwrap().to_string(),
                     "pink" => NodeType::Pink.as_net_id().unwrap().to_string(),
