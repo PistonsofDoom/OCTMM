@@ -161,16 +161,6 @@ impl DspModule {
         return self.nets.len() - 1;
     }
 
-    /// Replace a pre-existing network entry with a new network
-    pub fn net_replace(&mut self, target: usize, new_network: &Net) -> Option<usize> {
-        if !self.net_exists(target) {
-            return None;
-        }
-
-        self.nets[target] = new_network.clone();
-        return Some(target);
-    }
-
     pub fn get_net(&self, target: usize) -> Option<Net> {
         if !self.net_exists(target) {
             return None;
@@ -313,20 +303,6 @@ impl DspModule {
 
         // We can always stack, no need to check
         return Some(self.net_from(&Net::stack(net_a, net_b)));
-    }
-
-    pub fn net_chain(&mut self, target_net: usize, node_type: &NodeType) -> Option<NodeId> {
-        if !self.net_exists(target_net) {
-            return None;
-        }
-
-        Some(self.nets[target_net].chain(node_type.as_unit()))
-    }
-
-    pub fn net_commit(&mut self, target_net: usize) {
-        if self.net_exists(target_net) && self.nets[target_net].has_backend() {
-            self.nets[target_net].commit();
-        }
     }
 }
 
@@ -577,15 +553,6 @@ impl CommandModule for DspModule {
 
                 return ret.unwrap().to_string();
             }
-            "net_commit" => {
-                let arg_id = arg_vec
-                    .get(1)
-                    .expect("net_commit, id not found")
-                    .parse::<usize>()
-                    .expect("net_commit, string conversion");
-
-                self.net_commit(arg_id);
-            }
             // Handle bad commands
             _ => {
                 panic!(
@@ -671,18 +638,6 @@ mod tests {
         assert!(dsp.get_net(default_length + 200).is_none());
         assert!(dsp.get_net(default_length + 1).is_some());
 
-        // Test net_replace
-        // Should fail, as network doesn't exist here
-        assert!(
-            dsp.net_replace(default_length + 2, &Net::new(5, 5))
-                .is_none()
-        );
-        // Should succeed, as network does exist
-        assert_eq!(
-            dsp.net_replace(default_length, &Net::new(5, 5)),
-            Some(default_length)
-        );
-
         // Test net_constant
         assert_eq!(dsp.net_constant(12.3), default_length + 2);
     }
@@ -746,10 +701,6 @@ mod tests {
         let net = &dsp.nets[my_network.unwrap()];
         assert_eq!(net.inputs(), 2);
         assert_eq!(net.outputs(), 2);
-
-        // Test net_chain
-        let my_node_id = dsp.net_chain(my_network.unwrap(), &NodeType::Sine);
-        assert!(my_node_id.is_some());
     }
 
     #[test]

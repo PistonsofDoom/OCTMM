@@ -140,10 +140,6 @@ local function netStack(id1: Number, id2: Number)
 	end
 end
 
-local function netCommit(id: Number)
-	_audio_command_handler("dsp;net_commit;"..id)
-end
-
 -- If the input is a table, gets _net_id or returns an error
 -- If the input is a number, create a new constant
 local function getNetId(input)
