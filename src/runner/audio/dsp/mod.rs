@@ -31,6 +31,7 @@ pub enum NodeType {
     MLS,
     White,
     Pink,
+    Brown,
 }
 
 impl NodeType {
@@ -50,6 +51,7 @@ impl NodeType {
             NodeType::MLS => Box::new(mls()),
             NodeType::White => Box::new(white()),
             NodeType::Pink => Box::new(pink()),
+            NodeType::Brown => Box::new(brown()),
         }
     }
 
@@ -71,6 +73,7 @@ impl NodeType {
             NodeType::MLS => Some(11),
             NodeType::White => Some(12),
             NodeType::Pink => Some(13),
+            NodeType::Brown => Some(14),
         }
     }
 
@@ -93,6 +96,7 @@ impl NodeType {
             Net::wrap(NodeType::MLS.as_unit()),
             Net::wrap(NodeType::White.as_unit()),
             Net::wrap(NodeType::Pink.as_unit()),
+            Net::wrap(NodeType::Brown.as_unit()),
         ])
     }
 }
@@ -515,6 +519,7 @@ impl CommandModule for DspModule {
                     "mls" => NodeType::MLS.as_net_id().unwrap().to_string(),
                     "white" => NodeType::White.as_net_id().unwrap().to_string(),
                     "pink" => NodeType::Pink.as_net_id().unwrap().to_string(),
+                    "brown" => NodeType::Brown.as_net_id().unwrap().to_string(),
                     _ => "nil".to_string(),
                 };
             }
@@ -919,7 +924,8 @@ mod tests {
                 _G.r12 = _audio_command_handler("dsp;net_default;mls")
                 _G.r13 = _audio_command_handler("dsp;net_default;white")
                 _G.r14 = _audio_command_handler("dsp;net_default;pink")
-                _G.r15 = _audio_command_handler("dsp;net_default;bad_input")
+                _G.r15 = _audio_command_handler("dsp;net_default;brown")
+                _G.r16 = _audio_command_handler("dsp;net_default;bad_input")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -939,6 +945,7 @@ mod tests {
             let r13 = globals.get::<String>("r13").unwrap();
             let r14 = globals.get::<String>("r14").unwrap();
             let r15 = globals.get::<String>("r15").unwrap();
+            let r16 = globals.get::<String>("r16").unwrap();
 
             assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
             assert_eq!(r2, NodeType::Organ.as_net_id().unwrap().to_string());
@@ -954,7 +961,8 @@ mod tests {
             assert_eq!(r12, NodeType::MLS.as_net_id().unwrap().to_string());
             assert_eq!(r13, NodeType::White.as_net_id().unwrap().to_string());
             assert_eq!(r14, NodeType::Pink.as_net_id().unwrap().to_string());
-            assert_eq!(r15, "nil".to_string());
+            assert_eq!(r15, NodeType::Brown.as_net_id().unwrap().to_string());
+            assert_eq!(r16, "nil".to_string());
 
             // Test all other proxys
             let test_program = r#"
