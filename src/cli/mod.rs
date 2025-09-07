@@ -36,9 +36,7 @@ pub struct PlayArgs {
 #[derive(Args)]
 pub struct ExportArgs {
     /// Path to the project directory
-    pub project_path: PathBuf,
+    pub project_path: Option<PathBuf>,
     /// Path to the export directory
-    pub export_path: PathBuf,
-    /// Type of file to create
-    pub format: Option<String>,
+    pub export_path: Option<PathBuf>,
 }

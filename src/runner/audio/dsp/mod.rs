@@ -756,7 +756,8 @@ mod tests {
     fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -809,7 +810,8 @@ mod tests {
     fn test_shared_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -851,7 +853,8 @@ mod tests {
     fn test_net_management_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
 
         let _ = lua.scope(|scope| {
             module.init(&lua);
@@ -893,7 +896,8 @@ mod tests {
     fn test_net_proxy_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
 
         let _ = lua.scope(|scope| {
             module.init(&lua);

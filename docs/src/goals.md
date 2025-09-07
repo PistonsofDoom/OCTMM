@@ -6,7 +6,7 @@
 - [x] fundsp / Live Audio Integration
 - [x] Sample Playback
 - [x] Note Utilities
-- [ ] Audio Exports
+- [x] Audio Exports
 
 ### Potential Secondary Goals
 

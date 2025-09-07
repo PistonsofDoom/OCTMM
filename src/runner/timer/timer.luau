@@ -47,6 +47,15 @@ _G.GetBPM = function()
 	return _G.Timer._BPM
 end
 
+-- GetBPMModifier(
+-- ) -> [Number] Current BPM as a Modifier to convert Beats to Seconds
+--
+-- Returns the current BPM of the song
+_G.GetBPMModifier = function() 
+	return 60.0 / _G.Timer._BPM
+end
+
+
 -- Metatables
 -- _type = type of callback
 -- _name = callback name
@@ -92,7 +101,7 @@ Timer._methods.Enable = function(self, delay)
 	Timer._Callbacks[self._name]["function"] = self._function
 
 	if self._type == BEAT then
-		local bpm_modifier = 60.0 / GetBPM()
+		local bpm_modifier = GetBPMModifier()
 		local enable_time = GetTime() + (bpm_modifier * self._offset)
 
 		if delay then
@@ -244,6 +253,6 @@ function Timer.schedule(func, beat_delay: number)
 	local name = getUID()
 
 	Timer._Scheduled[name] = {}
-	Timer._Scheduled[name]["time"] = GetTime() + (beat_delay * (60.0 / GetBPM()))
+	Timer._Scheduled[name]["time"] = GetTime() + (beat_delay * GetBPMModifier())
 	Timer._Scheduled[name]["function"] = func
 end

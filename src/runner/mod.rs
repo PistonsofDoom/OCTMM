@@ -1,5 +1,6 @@
 use crate::{project::Project, runner::audio::AudioModule, runner::timer::TimerModule};
 use mlua::Lua;
+use std::path::PathBuf;
 
 mod audio;
 mod timer;
@@ -35,20 +36,47 @@ pub struct Runner {
     polling_modules: [Box<dyn PollingModule>; 1],
 
     project: Project,
-    now: std::time::Instant,
+    // If this is true, audio is being played live.
+    // Otherwise, we are exporting it to a file.
+    is_live: bool,
+    live_now: std::time::Instant,
+    // If is_live is false, we use export_time
+    export_time: f64,
     lua: Lua,
 }
 
 impl Runner {
     /// Creates a new runner based off a pre-existing project.
-    pub fn new(project: Project) -> Runner {
+    pub fn new(project: Project, export: Option<PathBuf>) -> Runner {
         Runner {
-            command_modules: [Box::new(AudioModule::new(project.get_samples()))],
+            is_live: export.is_none(),
+
+            command_modules: [Box::new(AudioModule::new(project.get_samples(), export))],
             polling_modules: [Box::new(TimerModule::new())],
 
             project: project,
-            now: std::time::Instant::now(),
+            live_now: std::time::Instant::now(),
+            export_time: 0.0,
             lua: Lua::new(),
+        }
+    }
+
+    fn initialize_time(&mut self) {
+        self.live_now = std::time::Instant::now();
+    }
+
+    fn get_time(&mut self) -> f64 {
+        if self.is_live {
+            return self.live_now.elapsed().as_millis() as f64 / 1000.0;
+        } else {
+            // Return current time
+            let to_return = self.export_time.clone();
+
+            // Add the equivalent time jump of xx samples to the time.
+            self.export_time += (audio::SAMPLES_PER_UPDATE as f64) / audio::EXPORT_SAMPLE_RATE;
+
+            // Finally return the time
+            return to_return;
         }
     }
 
@@ -104,11 +132,16 @@ impl Runner {
 
         // Initiate program loop
         let globals = self.lua.globals();
-        // Compensate for long initilizations
-        let start_millis = self.now.elapsed().as_millis();
 
+        // Don't use get_time() here, as if somebody is exporting the project
+        // it will return a garbage value
+        println!(
+            "Took {} seconds to load project",
+            self.live_now.elapsed().as_millis() as f64 / 1000.0
+        );
+        self.initialize_time();
         loop {
-            let time_passed: f64 = (self.now.elapsed().as_millis() - start_millis) as f64 / 1000.0;
+            let time_passed: f64 = self.get_time();
 
             // Command update functions
             for module in &mut self.command_modules {
@@ -146,9 +179,10 @@ impl Runner {
                 break;
             }
 
-            // Give the CPU a lil snooze
-            // TODO: add "turbo mode" flag, that removes this delay
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            // Give the CPU a lil snooze if playing live
+            if self.is_live {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
         }
 
         // Call 'end' on all internal modules
@@ -199,10 +233,21 @@ mod tests {
 
         // Load project
         let project = Project::load(&proj_dir).expect("Failed to load project");
-
         // Test Runner
-        let mut runner = Runner::new(project);
+        let mut runner = Runner::new(project, None);
 
         runner.run();
+
+        // Load project
+        let project = Project::load(&proj_dir).expect("Failed to load project");
+        // Test Runner Export
+        let mut runner = Runner::new(project, Some(tmp.clone()));
+
+        runner.run();
+
+        let mut export_file = tmp.clone();
+        export_file.push("export.wav");
+
+        assert!(export_file.exists());
     }
 }

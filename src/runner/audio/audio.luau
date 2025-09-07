@@ -204,7 +204,7 @@ function Instrument._methods._FindBestVoice(self)
 	for index,voice in ipairs(self._voices) do
 		local end_time = voice.end_time
 		-- If the voice isn't playing, just return it now.
-		if end_time < time then
+		if end_time <= time then
 			return {["index"] = index, ["forced"] = false}
 		end
 		
@@ -307,6 +307,9 @@ function Instrument._methods.Play(self, note, duration, amp)
 	if amp then
 		self:SetAmp(voice.index, amp)
 	end
+
+	-- Adjust duration to be based in Seconds, instead of Beats
+	duration = duration * GetBPMModifier()
 
 	-- Play the sound
 	self._voices[voice.index].event_id = Play(self._voices[voice.index].net, duration)

@@ -4,10 +4,66 @@ use cpal::{Device, FromSample, SizedSample, StreamConfig};
 use fundsp::hacker32::*;
 use mlua::Lua;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 mod dsp;
 
+pub const EXPORT_SAMPLE_RATE: f64 = 44100.0;
+pub const SAMPLES_PER_UPDATE: u64 = 44;
 const LUA_MODULE: &str = include_str!("audio.luau");
+
+pub struct ExportManager {
+    export_path: Option<PathBuf>,
+    export_wave: Wave,
+    audio_graph: Box<dyn AudioUnit>,
+}
+
+impl ExportManager {
+    pub fn new(export_pathbuf: Option<PathBuf>) -> ExportManager {
+        ExportManager {
+            export_path: export_pathbuf,
+            export_wave: Wave::new(2, EXPORT_SAMPLE_RATE),
+            // Initialize with empty sequencer backend
+            // If exportmanager is used, this will be replaced.
+            audio_graph: Box::new(Sequencer::new(false, 2).backend()),
+        }
+    }
+
+    // If export_path exists, we can export, therefore
+    // we are exporting. If export_path is None, we are
+    // playing live.
+    pub fn is_live(&self) -> bool {
+        self.export_path.is_none()
+    }
+
+    // Setup the export environment
+    pub fn init(&mut self, new_audio_graph: Box<dyn AudioUnit>) {
+        // Setup audio graph
+        self.audio_graph = new_audio_graph;
+    }
+
+    // Update the wave file with new samples
+    pub fn update(&mut self) {
+        // Push new samples to the wave
+        for _ in 0..SAMPLES_PER_UPDATE {
+            self.export_wave.push(self.audio_graph.get_stereo())
+        }
+    }
+
+    pub fn export(&mut self) {
+        let mut export_path = self
+            .export_path
+            .clone()
+            .expect("Tried to export without a path somehow...");
+        export_path.push("export.wav");
+        let _ = self
+            .export_wave
+            .save_wav32(export_path)
+            .expect("Ran into an issue exporting: ");
+
+        println!("Successfully exported wave file.");
+    }
+}
 
 pub struct AudioModule {
     sequencer: Sequencer,
@@ -18,16 +74,17 @@ pub struct AudioModule {
     event_map: HashMap<String, EventId>,
     // Modules
     dsp: DspModule,
+    // Utility struct for exporting to a .wav file
+    export_manager: ExportManager,
 }
 
 impl AudioModule {
-    // TODO: When audio export is implemented, add inputs
-    // for mode & bitrate.
-    pub fn new(samples: &HashMap<String, Wave>) -> AudioModule {
+    pub fn new(samples: &HashMap<String, Wave>, export: Option<PathBuf>) -> AudioModule {
         AudioModule {
             sequencer: Sequencer::new(false, 2),
             event_map: HashMap::new(),
             dsp: DspModule::new(samples.clone()),
+            export_manager: ExportManager::new(export),
         }
     }
 }
@@ -170,13 +227,32 @@ impl CommandModule for AudioModule {
         // Start playback
         let backend = self.sequencer.backend();
 
-        self.run_output(Box::new(backend));
+        // Playing live
+        if self.export_manager.is_live() {
+            self.run_output(Box::new(backend));
+        }
+        // Exporting audio
+        else {
+            self.sequencer.set_sample_rate(EXPORT_SAMPLE_RATE);
+            self.export_manager.init(Box::new(backend));
+            self.dsp.resample_to_output(EXPORT_SAMPLE_RATE);
+        }
     }
+
     fn update(&mut self, time: &f64, lua: &Lua) {
         self.dsp.update(time, lua);
+
+        if !self.export_manager.is_live() {
+            self.export_manager.update();
+        }
     }
+
     fn end(&mut self, lua: &Lua) {
         self.dsp.end(lua);
+
+        if !self.export_manager.is_live() {
+            self.export_manager.export();
+        }
     }
 
     fn get_post_init_program(&self) -> Option<String> {
@@ -216,7 +292,9 @@ impl CommandModule for AudioModule {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{CommandModule, audio::AudioModule};
+    use crate::runner::{CommandModule, audio::AudioModule, audio::ExportManager};
+    use crate::test_utils::make_test_dir;
+    use fundsp::sequencer::Sequencer;
     use fundsp::wave::Wave;
     use mlua::Lua;
     use std::collections::HashMap;
@@ -225,7 +303,8 @@ mod tests {
     pub fn test_rust_module() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -258,11 +337,42 @@ mod tests {
         module.end(&lua);
     }
 
+    // This provides some basic, rudimentary testing of the export manager.
+    // The real 'comprehensive' test is by manually exporting the example project
+    #[test]
+    pub fn test_export_manager() {
+        let tmp = make_test_dir("export_manager");
+        assert!(tmp.is_some());
+        let tmp = tmp.unwrap();
+
+        let mut export_manager = ExportManager::new(Some(tmp.clone()));
+        let export_manager_live = ExportManager::new(None);
+
+        // is_live check
+        assert!(!export_manager.is_live());
+        assert!(export_manager_live.is_live());
+
+        // Use empty sequencer
+        export_manager.init(Box::new(Sequencer::new(false, 2).backend()));
+
+        // Call update
+        export_manager.update();
+
+        // Export check
+        export_manager.export();
+
+        let mut file_check = tmp.clone();
+        file_check.push("export.wav");
+
+        assert!(file_check.exists());
+    }
+
     #[test]
     pub fn test_lua_note_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -304,7 +414,8 @@ mod tests {
     pub fn test_lua_instrument_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
@@ -328,6 +439,10 @@ mod tests {
                 -- time changes, so returning only 0.0 is OK
                 function _G.GetTime()
                     return 0.0
+                end
+
+                function _G.GetBPMModifier()
+                    return 1.0
                 end
 
                 local test_inst = Instrument.new(function(freq, amp)
@@ -385,7 +500,8 @@ mod tests {
     pub fn test_lua_sequence_utility() {
         let lua = Lua::new();
         let globals = lua.globals();
-        let module: &mut dyn CommandModule = &mut AudioModule::new(&HashMap::<String, Wave>::new());
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
         let post_init_program = module.get_post_init_program();
 
         module.init(&lua);
