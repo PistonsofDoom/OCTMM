@@ -19,6 +19,7 @@ pub enum NodeType {
     Square,
     Triangle,
     Lorenz,
+    Rossler,
     Ramp,
     // Dual-input
     // Generators
@@ -42,6 +43,7 @@ impl NodeType {
             NodeType::Square => Box::new(square()),
             NodeType::Triangle => Box::new(triangle()),
             NodeType::Lorenz => Box::new(lorenz()),
+            NodeType::Rossler => Box::new(rossler()),
             NodeType::Ramp => Box::new(ramp()),
             NodeType::Pulse => Box::new(pulse()),
             NodeType::MLS => Box::new(mls()),
@@ -62,11 +64,12 @@ impl NodeType {
             NodeType::Square => Some(5),
             NodeType::Triangle => Some(6),
             NodeType::Lorenz => Some(7),
-            NodeType::Ramp => Some(8),
-            NodeType::Pulse => Some(9),
-            NodeType::MLS => Some(10),
-            NodeType::White => Some(11),
-            NodeType::Pink => Some(12),
+            NodeType::Rossler => Some(8),
+            NodeType::Ramp => Some(9),
+            NodeType::Pulse => Some(10),
+            NodeType::MLS => Some(11),
+            NodeType::White => Some(12),
+            NodeType::Pink => Some(13),
         }
     }
 
@@ -83,6 +86,7 @@ impl NodeType {
             Net::wrap(NodeType::Square.as_unit()),
             Net::wrap(NodeType::Triangle.as_unit()),
             Net::wrap(NodeType::Lorenz.as_unit()),
+            Net::wrap(NodeType::Rossler.as_unit()),
             Net::wrap(NodeType::Ramp.as_unit()),
             Net::wrap(NodeType::Pulse.as_unit()),
             Net::wrap(NodeType::MLS.as_unit()),
@@ -502,6 +506,7 @@ impl CommandModule for DspModule {
                     "square" => NodeType::Square.as_net_id().unwrap().to_string(),
                     "triangle" => NodeType::Triangle.as_net_id().unwrap().to_string(),
                     "lorenz" => NodeType::Lorenz.as_net_id().unwrap().to_string(),
+                    "rossler" => NodeType::Rossler.as_net_id().unwrap().to_string(),
                     "ramp" => NodeType::Ramp.as_net_id().unwrap().to_string(),
                     "pulse" => NodeType::Pulse.as_net_id().unwrap().to_string(),
                     "mls" => NodeType::MLS.as_net_id().unwrap().to_string(),
@@ -905,12 +910,13 @@ mod tests {
                 _G.r6 = _audio_command_handler("dsp;net_default;square")
                 _G.r7 = _audio_command_handler("dsp;net_default;triangle")
                 _G.r8 = _audio_command_handler("dsp;net_default;lorenz")
-                _G.r9 = _audio_command_handler("dsp;net_default;ramp")
-                _G.r10 = _audio_command_handler("dsp;net_default;pulse")
-                _G.r11 = _audio_command_handler("dsp;net_default;mls")
-                _G.r12 = _audio_command_handler("dsp;net_default;white")
-                _G.r13 = _audio_command_handler("dsp;net_default;pink")
-                _G.r14 = _audio_command_handler("dsp;net_default;bad_input")
+                _G.r9 = _audio_command_handler("dsp;net_default;rossler")
+                _G.r10 = _audio_command_handler("dsp;net_default;ramp")
+                _G.r11 = _audio_command_handler("dsp;net_default;pulse")
+                _G.r12 = _audio_command_handler("dsp;net_default;mls")
+                _G.r13 = _audio_command_handler("dsp;net_default;white")
+                _G.r14 = _audio_command_handler("dsp;net_default;pink")
+                _G.r15 = _audio_command_handler("dsp;net_default;bad_input")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -929,6 +935,7 @@ mod tests {
             let r12 = globals.get::<String>("r12").unwrap();
             let r13 = globals.get::<String>("r13").unwrap();
             let r14 = globals.get::<String>("r14").unwrap();
+            let r15 = globals.get::<String>("r15").unwrap();
 
             assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
             assert_eq!(r2, NodeType::Organ.as_net_id().unwrap().to_string());
@@ -938,12 +945,13 @@ mod tests {
             assert_eq!(r6, NodeType::Square.as_net_id().unwrap().to_string());
             assert_eq!(r7, NodeType::Triangle.as_net_id().unwrap().to_string());
             assert_eq!(r8, NodeType::Lorenz.as_net_id().unwrap().to_string());
-            assert_eq!(r9, NodeType::Ramp.as_net_id().unwrap().to_string());
-            assert_eq!(r10, NodeType::Pulse.as_net_id().unwrap().to_string());
-            assert_eq!(r11, NodeType::MLS.as_net_id().unwrap().to_string());
-            assert_eq!(r12, NodeType::White.as_net_id().unwrap().to_string());
-            assert_eq!(r13, NodeType::Pink.as_net_id().unwrap().to_string());
-            assert_eq!(r14, "nil".to_string());
+            assert_eq!(r9, NodeType::Rossler.as_net_id().unwrap().to_string());
+            assert_eq!(r10, NodeType::Ramp.as_net_id().unwrap().to_string());
+            assert_eq!(r11, NodeType::Pulse.as_net_id().unwrap().to_string());
+            assert_eq!(r12, NodeType::MLS.as_net_id().unwrap().to_string());
+            assert_eq!(r13, NodeType::White.as_net_id().unwrap().to_string());
+            assert_eq!(r14, NodeType::Pink.as_net_id().unwrap().to_string());
+            assert_eq!(r15, "nil".to_string());
 
             // Test all other proxys
             let test_program = r#"
