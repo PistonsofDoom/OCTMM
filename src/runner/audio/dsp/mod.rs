@@ -32,6 +32,26 @@ pub enum NodeType {
     White,
     Pink,
     Brown,
+
+    // Effects
+    Resonator,
+    Peak,
+    Pinkpass,
+    Panner,
+    Notch,
+    Moog,
+    Morph,
+    Lowpole,
+    Lowpass,
+    Lowshelf,
+    Highpole,
+    Highpass,
+    Highshelf,
+    Butterpass,
+    Bell,
+    Bandpass,
+    Bandrez,
+    Allpass,
 }
 
 impl NodeType {
@@ -52,6 +72,24 @@ impl NodeType {
             NodeType::White => Box::new(white()),
             NodeType::Pink => Box::new(pink()),
             NodeType::Brown => Box::new(brown()),
+            NodeType::Resonator => Box::new(resonator()),
+            NodeType::Peak => Box::new(peak()),
+            NodeType::Pinkpass => Box::new(pinkpass()),
+            NodeType::Panner => Box::new(panner()),
+            NodeType::Notch => Box::new(notch()),
+            NodeType::Moog => Box::new(moog()),
+            NodeType::Morph => Box::new(morph()),
+            NodeType::Lowpole => Box::new(lowpole()),
+            NodeType::Lowpass => Box::new(lowpass()),
+            NodeType::Lowshelf => Box::new(lowshelf()),
+            NodeType::Highpole => Box::new(highpole()),
+            NodeType::Highpass => Box::new(highpass()),
+            NodeType::Highshelf => Box::new(highshelf()),
+            NodeType::Butterpass => Box::new(butterpass()),
+            NodeType::Bell => Box::new(bell()),
+            NodeType::Bandpass => Box::new(bandpass()),
+            NodeType::Bandrez => Box::new(bandrez()),
+            NodeType::Allpass => Box::new(allpass()),
         }
     }
 
@@ -74,6 +112,24 @@ impl NodeType {
             NodeType::White => Some(12),
             NodeType::Pink => Some(13),
             NodeType::Brown => Some(14),
+            NodeType::Resonator => Some(15),
+            NodeType::Peak => Some(16),
+            NodeType::Pinkpass => Some(17),
+            NodeType::Panner => Some(18),
+            NodeType::Notch => Some(18),
+            NodeType::Moog => Some(19),
+            NodeType::Morph => Some(20),
+            NodeType::Lowpole => Some(21),
+            NodeType::Lowpass => Some(22),
+            NodeType::Lowshelf => Some(23),
+            NodeType::Highpole => Some(24),
+            NodeType::Highpass => Some(25),
+            NodeType::Highshelf => Some(26),
+            NodeType::Butterpass => Some(27),
+            NodeType::Bell => Some(28),
+            NodeType::Bandpass => Some(29),
+            NodeType::Bandrez => Some(30),
+            NodeType::Allpass => Some(31),
         }
     }
 
@@ -520,6 +576,37 @@ impl CommandModule for DspModule {
                     "white" => NodeType::White.as_net_id().unwrap().to_string(),
                     "pink" => NodeType::Pink.as_net_id().unwrap().to_string(),
                     "brown" => NodeType::Brown.as_net_id().unwrap().to_string(),
+                    "resonator" => NodeType::Resonator.as_net_id().unwrap().to_string(),
+                    "peak" => NodeType::Peak.as_net_id().unwrap().to_string(),
+                    "pinkpass" => NodeType::Pinkpass.as_net_id().unwrap().to_string(),
+                    "panner" => NodeType::Panner.as_net_id().unwrap().to_string(),
+                    "notch" => NodeType::Notch.as_net_id().unwrap().to_string(),
+                    "moog" => NodeType::Moog.as_net_id().unwrap().to_string(),
+                    "morph" => NodeType::Morph.as_net_id().unwrap().to_string(),
+                    "lowpole" => NodeType::Lowpole.as_net_id().unwrap().to_string(),
+                    "lowpass" => NodeType::Lowpass.as_net_id().unwrap().to_string(),
+                    "lowshelf" => NodeType::Lowshelf.as_net_id().unwrap().to_string(),
+                    "highpole" => NodeType::Highpole.as_net_id().unwrap().to_string(),
+                    "highpass" => NodeType::Highpass.as_net_id().unwrap().to_string(),
+                    "highshelf" => NodeType::Highshelf.as_net_id().unwrap().to_string(),
+                    "butterpass" => NodeType::Butterpass.as_net_id().unwrap().to_string(),
+                    "bell" => NodeType::Bell.as_net_id().unwrap().to_string(),
+                    "bandpass" => NodeType::Bandpass.as_net_id().unwrap().to_string(),
+                    "bandrez" => NodeType::Bandrez.as_net_id().unwrap().to_string(),
+                    "allpass" => NodeType::Allpass.as_net_id().unwrap().to_string(),
+                    _ => "nil".to_string(),
+                };
+            }
+            "net_effect" => {
+                let arg_type = arg_vec.get(1).expect("net_default, type not found");
+
+                return match *arg_type {
+                    "reverb" => "nil".to_string(),
+                    "flanger" => "nil".to_string(),
+                    "pluck" => "nil".to_string(),
+                    "chorus" => "nil".to_string(),
+                    "adsr_live" => "nil".to_string(),
+                    "clip_to" => "nil".to_string(),
                     _ => "nil".to_string(),
                 };
             }
@@ -925,7 +1012,25 @@ mod tests {
                 _G.r13 = _audio_command_handler("dsp;net_default;white")
                 _G.r14 = _audio_command_handler("dsp;net_default;pink")
                 _G.r15 = _audio_command_handler("dsp;net_default;brown")
-                _G.r16 = _audio_command_handler("dsp;net_default;bad_input")
+                _G.r16 = _audio_command_handler("dsp;net_default;resonator")
+                _G.r17 = _audio_command_handler("dsp;net_default;peak")
+                _G.r18 = _audio_command_handler("dsp;net_default;pinkpass")
+                _G.r19 = _audio_command_handler("dsp;net_default;panner")
+                _G.r20 = _audio_command_handler("dsp;net_default;notch")
+                _G.r21 = _audio_command_handler("dsp;net_default;moog")
+                _G.r22 = _audio_command_handler("dsp;net_default;morph")
+                _G.r23 = _audio_command_handler("dsp;net_default;lowpole")
+                _G.r24 = _audio_command_handler("dsp;net_default;lowpass")
+                _G.r25 = _audio_command_handler("dsp;net_default;lowshelf")
+                _G.r26 = _audio_command_handler("dsp;net_default;highpole")
+                _G.r27 = _audio_command_handler("dsp;net_default;highpass")
+                _G.r28 = _audio_command_handler("dsp;net_default;highshelf")
+                _G.r29 = _audio_command_handler("dsp;net_default;butterpass")
+                _G.r30 = _audio_command_handler("dsp;net_default;bell")
+                _G.r31 = _audio_command_handler("dsp;net_default;bandpass")
+                _G.r32 = _audio_command_handler("dsp;net_default;bandrez")
+                _G.r33 = _audio_command_handler("dsp;net_default;allpass")
+                _G.r34 = _audio_command_handler("dsp;net_default;bad_input")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -946,6 +1051,24 @@ mod tests {
             let r14 = globals.get::<String>("r14").unwrap();
             let r15 = globals.get::<String>("r15").unwrap();
             let r16 = globals.get::<String>("r16").unwrap();
+            let r17 = globals.get::<String>("r17").unwrap();
+            let r18 = globals.get::<String>("r18").unwrap();
+            let r19 = globals.get::<String>("r19").unwrap();
+            let r20 = globals.get::<String>("r20").unwrap();
+            let r21 = globals.get::<String>("r21").unwrap();
+            let r22 = globals.get::<String>("r22").unwrap();
+            let r23 = globals.get::<String>("r23").unwrap();
+            let r24 = globals.get::<String>("r24").unwrap();
+            let r25 = globals.get::<String>("r25").unwrap();
+            let r26 = globals.get::<String>("r26").unwrap();
+            let r27 = globals.get::<String>("r27").unwrap();
+            let r28 = globals.get::<String>("r28").unwrap();
+            let r29 = globals.get::<String>("r29").unwrap();
+            let r30 = globals.get::<String>("r30").unwrap();
+            let r31 = globals.get::<String>("r31").unwrap();
+            let r32 = globals.get::<String>("r32").unwrap();
+            let r33 = globals.get::<String>("r33").unwrap();
+            let r34 = globals.get::<String>("r34").unwrap();
 
             assert_eq!(r1, NodeType::Hammond.as_net_id().unwrap().to_string());
             assert_eq!(r2, NodeType::Organ.as_net_id().unwrap().to_string());
@@ -962,7 +1085,25 @@ mod tests {
             assert_eq!(r13, NodeType::White.as_net_id().unwrap().to_string());
             assert_eq!(r14, NodeType::Pink.as_net_id().unwrap().to_string());
             assert_eq!(r15, NodeType::Brown.as_net_id().unwrap().to_string());
-            assert_eq!(r16, "nil".to_string());
+            assert_eq!(r16, NodeType::Resonator.as_net_id().unwrap().to_string());
+            assert_eq!(r17, NodeType::Peak.as_net_id().unwrap().to_string());
+            assert_eq!(r18, NodeType::Pinkpass.as_net_id().unwrap().to_string());
+            assert_eq!(r19, NodeType::Panner.as_net_id().unwrap().to_string());
+            assert_eq!(r20, NodeType::Notch.as_net_id().unwrap().to_string());
+            assert_eq!(r21, NodeType::Moog.as_net_id().unwrap().to_string());
+            assert_eq!(r22, NodeType::Morph.as_net_id().unwrap().to_string());
+            assert_eq!(r23, NodeType::Lowpole.as_net_id().unwrap().to_string());
+            assert_eq!(r24, NodeType::Lowpass.as_net_id().unwrap().to_string());
+            assert_eq!(r25, NodeType::Lowshelf.as_net_id().unwrap().to_string());
+            assert_eq!(r26, NodeType::Highpole.as_net_id().unwrap().to_string());
+            assert_eq!(r27, NodeType::Highpass.as_net_id().unwrap().to_string());
+            assert_eq!(r28, NodeType::Highshelf.as_net_id().unwrap().to_string());
+            assert_eq!(r29, NodeType::Butterpass.as_net_id().unwrap().to_string());
+            assert_eq!(r30, NodeType::Bell.as_net_id().unwrap().to_string());
+            assert_eq!(r31, NodeType::Bandpass.as_net_id().unwrap().to_string());
+            assert_eq!(r32, NodeType::Bandrez.as_net_id().unwrap().to_string());
+            assert_eq!(r33, NodeType::Allpass.as_net_id().unwrap().to_string());
+            assert_eq!(r34, "nil".to_string());
 
             // Test all other proxys
             let test_program = r#"
