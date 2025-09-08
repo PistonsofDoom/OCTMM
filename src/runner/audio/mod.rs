@@ -395,6 +395,11 @@ mod tests {
                 _G.T2 = A4:Offset(1):GetFreq()
                 _G.T3 = A4:Scale(MAJOR, 2):GetFreq()
                 _G.T4 = A4:Chord(MAJOR_TRIAD)[1]:GetFreq()
+
+                _G.T5 = C1:GetFreq()
+                _G.T6 = B0:GetFreq()
+                _G.T7 = C2:GetFreq()
+                _G.T8 = B2:GetFreq()
             "#;
 
             lua.load(test_program)
@@ -404,6 +409,11 @@ mod tests {
             assert_eq!(globals.get::<f64>("T2").unwrap(), 466.24);
             assert_eq!(globals.get::<f64>("T3").unwrap(), 554.24);
             assert_eq!(globals.get::<f64>("T4").unwrap(), 440.0);
+
+            assert_eq!(globals.get::<f64>("T5").unwrap(), 32.7);
+            assert_eq!(globals.get::<f64>("T6").unwrap(), 30.87);
+            assert_eq!(globals.get::<f64>("T7").unwrap(), 65.4);
+            assert_eq!(globals.get::<f64>("T8").unwrap(), 123.48);
             Ok(())
         });
 

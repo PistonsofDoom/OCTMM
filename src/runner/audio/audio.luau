@@ -136,7 +136,7 @@ end
 function Note.new(index: Number)
 	-- Calculate frequency
 	local start = 1 + ((index-1) % 12)
-	local octave = math.floor(index / 12)
+	local octave = (index-1) // 12
 
 	-- Create table
 	local new_note = {}
@@ -161,7 +161,7 @@ end
 -- 12 notes per octave, 10 octaves
 for i = 1,(12 * 10) do
 	local name = note_names[1 + ((i - 1) % 12)]
-	local octave = math.floor(i / 12)
+	local octave = (i - 1) // 12
 	
 	if not name[2] then
 		name = name[1]..tostring(octave)

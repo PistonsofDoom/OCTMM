@@ -398,7 +398,11 @@ impl DspModule {
         let net_b = self.nets[target_b].clone();
 
         if !Net::can_pipe(&net_a, &net_b) {
-            println!("Can't pipe! Net A has {} outputs, Net B has {}", net_a.outputs(), net_b.inputs());
+            println!(
+                "Can't pipe! Net A has {} outputs, Net B has {}",
+                net_a.outputs(),
+                net_b.inputs()
+            );
             return None;
         }
 
