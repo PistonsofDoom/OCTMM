@@ -116,20 +116,20 @@ impl NodeType {
             NodeType::Peak => Some(16),
             NodeType::Pinkpass => Some(17),
             NodeType::Panner => Some(18),
-            NodeType::Notch => Some(18),
-            NodeType::Moog => Some(19),
-            NodeType::Morph => Some(20),
-            NodeType::Lowpole => Some(21),
-            NodeType::Lowpass => Some(22),
-            NodeType::Lowshelf => Some(23),
-            NodeType::Highpole => Some(24),
-            NodeType::Highpass => Some(25),
-            NodeType::Highshelf => Some(26),
-            NodeType::Butterpass => Some(27),
-            NodeType::Bell => Some(28),
-            NodeType::Bandpass => Some(29),
-            NodeType::Bandrez => Some(30),
-            NodeType::Allpass => Some(31),
+            NodeType::Notch => Some(19),
+            NodeType::Moog => Some(20),
+            NodeType::Morph => Some(21),
+            NodeType::Lowpole => Some(22),
+            NodeType::Lowpass => Some(23),
+            NodeType::Lowshelf => Some(24),
+            NodeType::Highpole => Some(25),
+            NodeType::Highpass => Some(26),
+            NodeType::Highshelf => Some(27),
+            NodeType::Butterpass => Some(28),
+            NodeType::Bell => Some(29),
+            NodeType::Bandpass => Some(30),
+            NodeType::Bandrez => Some(31),
+            NodeType::Allpass => Some(32),
         }
     }
 
@@ -153,6 +153,23 @@ impl NodeType {
             Net::wrap(NodeType::White.as_unit()),
             Net::wrap(NodeType::Pink.as_unit()),
             Net::wrap(NodeType::Brown.as_unit()),
+            Net::wrap(NodeType::Resonator.as_unit()),
+            Net::wrap(NodeType::Peak.as_unit()),
+            Net::wrap(NodeType::Pinkpass.as_unit()),
+            Net::wrap(NodeType::Panner.as_unit()),
+            Net::wrap(NodeType::Notch.as_unit()),
+            Net::wrap(NodeType::Moog.as_unit()),
+            Net::wrap(NodeType::Morph.as_unit()),
+            Net::wrap(NodeType::Lowpole.as_unit()),
+            Net::wrap(NodeType::Lowpass.as_unit()),
+            Net::wrap(NodeType::Lowshelf.as_unit()),
+            Net::wrap(NodeType::Highpole.as_unit()),
+            Net::wrap(NodeType::Highpass.as_unit()),
+            Net::wrap(NodeType::Highshelf.as_unit()),
+            Net::wrap(NodeType::Butterpass.as_unit()),
+            Net::wrap(NodeType::Bandpass.as_unit()),
+            Net::wrap(NodeType::Bandrez.as_unit()),
+            Net::wrap(NodeType::Allpass.as_unit()),
         ])
     }
 }
@@ -381,6 +398,7 @@ impl DspModule {
         let net_b = self.nets[target_b].clone();
 
         if !Net::can_pipe(&net_a, &net_b) {
+            println!("Can't pipe! Net A has {} outputs, Net B has {}", net_a.outputs(), net_b.inputs());
             return None;
         }
 
