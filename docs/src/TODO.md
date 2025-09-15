@@ -1,6 +1,7 @@
 
 ### BEFORE RC/0.1.0 is merged
 - Add DSP filters & effects
+- Add DSP subtract
 
 - Document all internal lua commands
 - Create template Luau file
