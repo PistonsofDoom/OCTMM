@@ -620,15 +620,62 @@ impl CommandModule for DspModule {
                 };
             }
             "net_effect" => {
-                let arg_type = arg_vec.get(1).expect("net_default, type not found");
+                let arg_type = arg_vec.get(1).expect("net_effect, type not found");
+
+                // TODO: Before merge, replace with while loop & vector for cleanliness
+                let arg1 = arg_vec
+                    .get(2)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg1 f32 conversion");
+                let arg2 = arg_vec
+                    .get(3)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg2 f32 conversion");
+                let arg3 = arg_vec
+                    .get(4)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg3 f32 conversion");
+                let arg4 = arg_vec
+                    .get(5)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg4 f32 conversion");
+                let arg5 = arg_vec
+                    .get(6)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg5 f32 conversion");
+                let arg6 = arg_vec
+                    .get(7)
+                    .expect("net_effect, arg1 not found")
+                    .parse::<f32>()
+                    .expect("net_effect, arg6 f32 conversion");
 
                 return match *arg_type {
-                    "reverb" => "nil".to_string(),
-                    "flanger" => "nil".to_string(),
-                    "pluck" => "nil".to_string(),
-                    "chorus" => "nil".to_string(),
-                    "adsr_live" => "nil".to_string(),
-                    "clip_to" => "nil".to_string(),
+                    "reverb" => self
+                        .net_from(&Net::wrap(Box::new(reverb_stereo(arg1, arg2, arg3))))
+                        .to_string(), // 3 arg
+                    "delay" => self.net_from(&Net::wrap(Box::new(delay(arg1)))).to_string(), // 1 arg
+                    "flanger" => self
+                        .net_from(&Net::wrap(Box::new(flanger(arg1, arg2, arg3, move |t| {
+                            lerp11(arg4, arg5, sin_hz(arg6, t))
+                        }))))
+                        .to_string(), // 6 arg, 4, 5, and 6 are used to tune the flanger closure
+                    "pluck" => self
+                        .net_from(&Net::wrap(Box::new(pluck(arg1, arg2, arg3))))
+                        .to_string(), // 3 arg
+                    "chorus" => self
+                        .net_from(&Net::wrap(Box::new(chorus(arg4 as u64, arg1, arg2, arg3))))
+                        .to_string(), // 4 arg, arg4 is used for the u64 seed, optionally
+                    "adsr_live" => self
+                        .net_from(&Net::wrap(Box::new(adsr_live(arg1, arg2, arg3, arg4))))
+                        .to_string(), // 4 arg
+                    "clip_to" => self
+                        .net_from(&Net::wrap(Box::new(clip_to(arg1, arg2))))
+                        .to_string(), // 2 arg
                     _ => "nil".to_string(),
                 };
             }
