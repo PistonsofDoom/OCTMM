@@ -108,8 +108,6 @@ end
 local function netEffect(effect_type, ...)
 	local args = { ... }
 
-	print("DEBUG: Creating netEffect with net_type "..effect_type)
-
 	-- Convert variadic args into a string, with ; as a separator between values
 	local args_as_string = ""
 	for _,v in pairs(args) do
@@ -226,6 +224,10 @@ end
 
 -- User facing functions
 function Net.from(net_id: Number)
+	if net_id == nil then
+		error("Tried creating network with no network id")
+	end
+
 	local new_net = {}
 
 	setmetatable(new_net, Net._mt)
