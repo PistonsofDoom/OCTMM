@@ -1,6 +1,5 @@
 
 ### BEFORE RC/0.1.0 is merged
-- Add DSP filters & effects
 - Add DSP subtract
 - Add DSP 'envelope', which contains a couple custom envelopers a user can create
 
