@@ -1048,6 +1048,67 @@ mod tests {
     }
 
     #[test]
+    fn test_net_effect_commands() {
+        let lua = Lua::new();
+        let globals = lua.globals();
+        let module: &mut dyn CommandModule =
+            &mut AudioModule::new(&HashMap::<String, Wave>::new(), None);
+        let post_init_program = module.get_post_init_program();
+
+        let _ = lua.scope(|scope| {
+            module.init(&lua);
+
+            lua.globals()
+                .set(
+                    module.get_command_name(),
+                    scope.create_function_mut(|_, arg: String| Ok(module.command(&lua, &arg)))?,
+                )
+                .expect("Error using command function");
+
+            lua.load(post_init_program.unwrap())
+                .exec()
+                .expect("Failed to load post init on module, got\n");
+
+            // Test whether calling all global net_effect commands result
+            // in a "nil" or a valid effect
+            let test_program = r#"
+                function GetBPMModifier()
+                    return 1.0
+                end
+
+                _G.r1 = Reverb(10, 0.5, 0.5) ~= nil
+                _G.r2 = Delay(2) ~= nil
+                _G.r3 = Flanger(0.05, 0.01, 0.1, 30.0, 0.01, 0.1) ~= nil
+                _G.r3 = _G.r3 and (Flanger(0.05, 0.01, 0.1, 30.0) ~= nil)
+                _G.r4 = Pluck(440.0, 0.5, 0.5) ~= nil
+                _G.r5 = Chorus(0.0, 0.1, 40.0) ~= nil
+                _G.r6 = (ADSR() ~= nil) and (ADSR(1,2,3,4) ~= nil)
+                _G.r7 = (Clip ~= nil) and (Clip(-0.5, 0.5) ~= nil)
+            "#;
+
+            assert!(lua.load(test_program).exec().is_ok());
+
+            let reverb = globals.get::<bool>("r1").unwrap();
+            let delay = globals.get::<bool>("r2").unwrap();
+            let flanger = globals.get::<bool>("r3").unwrap();
+            let pluck = globals.get::<bool>("r4").unwrap();
+            let chorus = globals.get::<bool>("r5").unwrap();
+            let adsr = globals.get::<bool>("r6").unwrap();
+            let clip = globals.get::<bool>("r7").unwrap();
+
+            assert!(reverb);
+            assert!(delay);
+            assert!(flanger);
+            assert!(pluck);
+            assert!(chorus);
+            assert!(adsr);
+            assert!(clip);
+
+            Ok(())
+        });
+    }
+
+    #[test]
     fn test_net_proxy_commands() {
         let lua = Lua::new();
         let globals = lua.globals();
