@@ -114,8 +114,6 @@ local function netEffect(effect_type, ...)
 		args_as_string = args_as_string..";"..tostring(v)
 	end
 
-	print(args_as_string)
-
 	local ret = _audio_command_handler("dsp;net_effect;"..effect_type..args_as_string)
 
 	if ret == "nil" then
