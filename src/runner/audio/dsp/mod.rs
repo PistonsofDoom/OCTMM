@@ -630,27 +630,27 @@ impl CommandModule for DspModule {
                     .expect("net_effect, arg1 f32 conversion");
                 let arg2 = arg_vec
                     .get(3)
-                    .expect("net_effect, arg1 not found")
+                    .expect("net_effect, arg2 not found")
                     .parse::<f32>()
                     .expect("net_effect, arg2 f32 conversion");
                 let arg3 = arg_vec
                     .get(4)
-                    .expect("net_effect, arg1 not found")
+                    .expect("net_effect, arg3 not found")
                     .parse::<f32>()
                     .expect("net_effect, arg3 f32 conversion");
                 let arg4 = arg_vec
                     .get(5)
-                    .expect("net_effect, arg1 not found")
+                    .expect("net_effect, arg4 not found")
                     .parse::<f32>()
                     .expect("net_effect, arg4 f32 conversion");
                 let arg5 = arg_vec
                     .get(6)
-                    .expect("net_effect, arg1 not found")
+                    .expect("net_effect, arg5 not found")
                     .parse::<f32>()
                     .expect("net_effect, arg5 f32 conversion");
                 let arg6 = arg_vec
                     .get(7)
-                    .expect("net_effect, arg1 not found")
+                    .expect("net_effect, arg6 not found")
                     .parse::<f32>()
                     .expect("net_effect, arg6 f32 conversion");
 
