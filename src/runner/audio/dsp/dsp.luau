@@ -110,11 +110,6 @@ local function netEffect(effect_type, ...)
 
 	print("DEBUG: Creating netEffect with net_type "..effect_type)
 
-	-- Minimum amount of args is 6, so pad with 0s
-	for i = 1, (6 - #args) do
-		table.insert(args, 0)
-	end
-
 	-- Convert variadic args into a string, with ; as a separator between values
 	local args_as_string = ""
 	for _,v in pairs(args) do
