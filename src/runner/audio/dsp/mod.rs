@@ -1108,6 +1108,8 @@ mod tests {
         });
     }
 
+    // This test only confirms whether the internal audio command returns the correct index.
+    // It does not confirm if it is returning the correct audio unit
     #[test]
     fn test_net_proxy_commands() {
         let lua = Lua::new();
