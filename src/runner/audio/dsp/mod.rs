@@ -389,6 +389,27 @@ impl DspModule {
         Some(self.net_from(&new_network))
     }
 
+    pub fn net_sub(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
+        if !self.net_exists(target_a) || !self.net_exists(target_b) {
+            return None;
+        }
+
+        let net_a = self.nets[target_a].clone();
+        let net_b = self.nets[target_b].clone();
+
+        if !Net::can_binary(&net_a, &net_b) {
+            println!(
+                "Can't subtract! Net A has {} outputs, Net B has {} outputs",
+                net_a.outputs(),
+                net_b.outputs()
+            );
+            return None;
+        }
+
+        let new_network = Net::binary(net_a, net_b, FrameSub::new());
+        return Some(self.net_from(&new_network));
+    }
+
     pub fn net_pipe(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
         if !self.net_exists(target_a) || !self.net_exists(target_b) {
             return None;
@@ -399,7 +420,7 @@ impl DspModule {
 
         if !Net::can_pipe(&net_a, &net_b) {
             println!(
-                "Can't pipe! Net A has {} outputs, Net B has {}",
+                "Can't pipe! Net A has {} outputs, Net B has {} inputs",
                 net_a.outputs(),
                 net_b.inputs()
             );
@@ -724,6 +745,26 @@ impl CommandModule for DspModule {
 
                 return ret.unwrap().to_string();
             }
+            "net_sub" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_sub, id not found")
+                    .parse::<usize>()
+                    .expect("net_sub, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_sub, id not found")
+                    .parse::<usize>()
+                    .expect("net_sub, string conversion");
+
+                let ret = self.net_sub(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
             "net_pipe" => {
                 let arg_id1 = arg_vec
                     .get(1)
@@ -894,6 +935,16 @@ mod tests {
         let my_network = dsp.net_bus(sine, my_shared);
         assert!(my_network.is_some());
         let my_network = dsp.net_bus(my_shared, sine);
+        assert!(my_network.is_some());
+
+        // Test net_sub
+        let my_network = dsp.net_sub(sine, saw);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(constant, constant);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(sine, my_shared);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(my_shared, sine);
         assert!(my_network.is_some());
 
         // Test net_pipe
@@ -1253,11 +1304,13 @@ mod tests {
                 _G.s2 = _audio_command_handler("dsp;net_bus;1;2")
                 _G.s3 = _audio_command_handler("dsp;net_pipe;1;2")
                 _G.s4 = _audio_command_handler("dsp;net_stack;1;2")
+                _G.s5 = _audio_command_handler("dsp;net_sub;1;2")
                 -- Failures
                 _G.f1 = _audio_command_handler("dsp;net_product;1;2")
                 _G.f2 = _audio_command_handler("dsp;net_bus;1;100")
                 _G.f3 = _audio_command_handler("dsp;net_pipe;1;100")
                 _G.f4 = _audio_command_handler("dsp;net_stack;1;100")
+                _G.f5 = _audio_command_handler("dsp;net_sub;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -1266,21 +1319,25 @@ mod tests {
             let s2 = globals.get::<String>("s2").unwrap();
             let s3 = globals.get::<String>("s3").unwrap();
             let s4 = globals.get::<String>("s4").unwrap();
+            let s5 = globals.get::<String>("s5").unwrap();
             let f1 = globals.get::<String>("f1").unwrap();
             let f2 = globals.get::<String>("f2").unwrap();
             let f3 = globals.get::<String>("f3").unwrap();
             let f4 = globals.get::<String>("f4").unwrap();
+            let f5 = globals.get::<String>("f5").unwrap();
 
             // Successes
             assert_eq!(s1, (NodeType::get_defaults().len() + 1).to_string());
             assert_eq!(s2, (NodeType::get_defaults().len() + 2).to_string());
             assert_eq!(s3, (NodeType::get_defaults().len() + 3).to_string());
             assert_eq!(s4, (NodeType::get_defaults().len() + 4).to_string());
+            assert_eq!(s5, (NodeType::get_defaults().len() + 5).to_string());
             // Failures
             assert_eq!(f1, "nil".to_string());
             assert_eq!(f2, "nil".to_string());
             assert_eq!(f3, "nil".to_string());
             assert_eq!(f4, "nil".to_string());
+            assert_eq!(f5, "nil".to_string());
 
             Ok(())
         });
