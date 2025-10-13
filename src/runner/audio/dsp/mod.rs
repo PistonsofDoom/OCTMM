@@ -937,6 +937,16 @@ mod tests {
         let my_network = dsp.net_bus(my_shared, sine);
         assert!(my_network.is_some());
 
+        // Test net_sub
+        let my_network = dsp.net_sub(sine, saw);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(constant, constant);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(sine, my_shared);
+        assert!(my_network.is_some());
+        let my_network = dsp.net_sub(my_shared, sine);
+        assert!(my_network.is_some());
+
         // Test net_pipe
         let my_network = dsp.net_pipe(my_network.unwrap(), sine);
         assert!(my_network.is_some());
@@ -1294,11 +1304,13 @@ mod tests {
                 _G.s2 = _audio_command_handler("dsp;net_bus;1;2")
                 _G.s3 = _audio_command_handler("dsp;net_pipe;1;2")
                 _G.s4 = _audio_command_handler("dsp;net_stack;1;2")
+                _G.s5 = _audio_command_handler("dsp;net_sub;1;2")
                 -- Failures
                 _G.f1 = _audio_command_handler("dsp;net_product;1;2")
                 _G.f2 = _audio_command_handler("dsp;net_bus;1;100")
                 _G.f3 = _audio_command_handler("dsp;net_pipe;1;100")
                 _G.f4 = _audio_command_handler("dsp;net_stack;1;100")
+                _G.f5 = _audio_command_handler("dsp;net_sub;1;100")
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -1307,21 +1319,25 @@ mod tests {
             let s2 = globals.get::<String>("s2").unwrap();
             let s3 = globals.get::<String>("s3").unwrap();
             let s4 = globals.get::<String>("s4").unwrap();
+            let s5 = globals.get::<String>("s5").unwrap();
             let f1 = globals.get::<String>("f1").unwrap();
             let f2 = globals.get::<String>("f2").unwrap();
             let f3 = globals.get::<String>("f3").unwrap();
             let f4 = globals.get::<String>("f4").unwrap();
+            let f5 = globals.get::<String>("f5").unwrap();
 
             // Successes
             assert_eq!(s1, (NodeType::get_defaults().len() + 1).to_string());
             assert_eq!(s2, (NodeType::get_defaults().len() + 2).to_string());
             assert_eq!(s3, (NodeType::get_defaults().len() + 3).to_string());
             assert_eq!(s4, (NodeType::get_defaults().len() + 4).to_string());
+            assert_eq!(s5, (NodeType::get_defaults().len() + 5).to_string());
             // Failures
             assert_eq!(f1, "nil".to_string());
             assert_eq!(f2, "nil".to_string());
             assert_eq!(f3, "nil".to_string());
             assert_eq!(f4, "nil".to_string());
+            assert_eq!(f5, "nil".to_string());
 
             Ok(())
         });
