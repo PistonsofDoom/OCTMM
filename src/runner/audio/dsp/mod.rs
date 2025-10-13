@@ -657,6 +657,11 @@ impl CommandModule for DspModule {
                             move |t| lerp11(args[3], args[4], sin_hz(args[5], t)),
                         ))))
                         .to_string(), // 6 arg, 4, 5, and 6 are used to tune the flanger closure
+                    "phaser" => self
+                        .net_from(&Net::wrap(Box::new(phaser(args[0], move |t| {
+                            sin_hz(args[1], t) * args[2] + (1.0 - args[2])
+                        }))))
+                        .to_string(), // 3 arg, 2 and 3 are used to tune the phaser closure
                     "pluck" => self
                         .net_from(&Net::wrap(Box::new(pluck(args[0], args[1], args[2]))))
                         .to_string(), // 3 arg
@@ -1084,6 +1089,7 @@ mod tests {
                 _G.r5 = Chorus(0.0, 0.1, 40.0) ~= nil
                 _G.r6 = (ADSR() ~= nil) and (ADSR(1,2,3,4) ~= nil)
                 _G.r7 = (Clip ~= nil) and (Clip(-0.5, 0.5) ~= nil)
+                _G.r8 = Phaser(0.8, 5.0, 0.2) ~= nil
             "#;
 
             assert!(lua.load(test_program).exec().is_ok());
@@ -1095,6 +1101,7 @@ mod tests {
             let chorus = globals.get::<bool>("r5").unwrap();
             let adsr = globals.get::<bool>("r6").unwrap();
             let clip = globals.get::<bool>("r7").unwrap();
+            let phaser = globals.get::<bool>("r8").unwrap();
 
             assert!(reverb);
             assert!(delay);
@@ -1103,6 +1110,7 @@ mod tests {
             assert!(chorus);
             assert!(adsr);
             assert!(clip);
+            assert!(phaser);
 
             Ok(())
         });

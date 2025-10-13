@@ -390,6 +390,10 @@ function Flanger(feedback_amount, min_delay, max_delay, hz_f, min_delay_f, max_d
 	return Net.from(netEffect("flanger", feedback_amount, min_delay, max_delay, min_delay_f, max_delay_f, hz_f))
 end
 
+-- modifier is designed to be within the range of 0.0 to 1.0, but is left unchecked
+function Phaser(feedback_amount, hz_f, modifier_f)
+	return Net.from(netEffect("phaser", feedback_amount, hz_f, modifier_f))
+end
 
 -- high_freq_damping is ranged from 0...1
 function Pluck(frequency, gain_per_beat, high_freq_damping)
