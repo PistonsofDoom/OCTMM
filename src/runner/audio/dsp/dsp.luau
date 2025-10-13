@@ -103,6 +103,27 @@ local function netDefault(node_type: String)
 	end
 end
 
+-- Takes in effect type, and a "variadic", which should contain
+-- all the arguments requried for that net type
+local function netEffect(effect_type, ...)
+	local args = { ... }
+
+	-- Convert variadic args into a string, with ; as a separator between values
+	local args_as_string = ""
+	for _,v in pairs(args) do
+		args_as_string = args_as_string..";"..tostring(v)
+	end
+
+	local ret = _audio_command_handler("dsp;net_effect;"..effect_type..args_as_string)
+
+	if ret == "nil" then
+		print("Net effect error for effect "..effect_type)
+		return nil
+	else
+		return tonumber(ret)
+	end
+end
+
 local function netProduct(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_product;"..tostring(id1)..";"..tostring(id2))
 
@@ -201,6 +222,10 @@ end
 
 -- User facing functions
 function Net.from(net_id: Number)
+	if net_id == nil then
+		error("Tried creating network with no network id")
+	end
+
 	local new_net = {}
 
 	setmetatable(new_net, Net._mt)
@@ -331,6 +356,86 @@ function Sample.new(name: String, loop_point, channel)
 	return new_sample
 end
 
+-- Setup Effect Functions --
+
+-- See fundsp documentation for in-depth description
+-- room_size in meters (avg is 10)
+-- time (approx reverb time to -60 db)
+function Reverb(room_size, time, damping)
+	return Net.from(netEffect("reverb", room_size, time * GetBPMModifier() , damping))
+end
+
+-- Fixed delay of $time
+function Delay(time)
+	return Net.from(netEffect("delay", time * GetBPMModifier()))
+end
+
+-- feedback_amount (for example, 0.9 or -0.9) where negative inverts feedback phase
+-- delay in beats 
+-- hz_f is the frequency of the delay function
+-- delay_f in beats, for the delay function
+function Flanger(feedback_amount, min_delay, max_delay, hz_f, min_delay_f, max_delay_f)
+	if min_delay_f == nil then
+		min_delay_f = min_delay
+	end
+	if max_delay_f == nil then
+		max_delay_f = max_delay
+	end
+
+	min_delay *= GetBPMModifier()
+	max_delay *= GetBPMModifier()
+	min_delay_f *= GetBPMModifier()
+	max_delay_f *= GetBPMModifier()
+
+	return Net.from(netEffect("flanger", feedback_amount, min_delay, max_delay, min_delay_f, max_delay_f, hz_f))
+end
+
+-- modifier_f is designed to be within the range of 0.0 to 1.0, but is left unchecked
+function Phaser(feedback_amount, hz_f, modifier_f)
+	return Net.from(netEffect("phaser", feedback_amount, hz_f, modifier_f))
+end
+
+-- high_freq_damping is ranged from 0...1
+function Pluck(frequency, gain_per_beat, high_freq_damping)
+	return Net.from(netEffect("pluck", frequency, gain_per_beat * GetBPMModifier(), high_freq_damping))
+end
+
+function Chorus(separation, variation, modulation_freq)
+	return Net.from(netEffect("chorus", separation, variation, modulation_freq))
+end
+
+function ADSR(attack, decay, sustain, release)
+	if not attack then
+		attack = 0
+	end
+	if not decay then
+		decay = 0
+	end
+	if not sustain then
+		sustain = 0
+	end
+	if not release then
+		release = 0
+	end
+
+	attack *= GetBPMModifier()
+	decay *= GetBPMModifier()
+	sustain *= GetBPMModifier()
+	release *= GetBPMModifier()
+
+	return Net.from(netEffect("adsr_live", attack, decay, sustain, release))
+end
+
+function Clip(min, max)
+	if not min then
+		min = -1
+	end
+	if not max then
+		max = -1
+	end
+	return Net.from(netEffect("clip_to", min, max))
+end
+
 -- Setup Defaults --
 _G.Hammond = Net.from(netDefault("hammond"))
 _G.Organ = Net.from(netDefault("organ"))
@@ -346,3 +451,22 @@ _G.Pulse = Net.from(netDefault("pulse"))
 _G.MLS = Net.from(netDefault("mls"))
 _G.White = Net.from(netDefault("white"))
 _G.Pink = Net.from(netDefault("pink"))
+_G.Brown = Net.from(netDefault("brown"))
+_G.Resonator = Net.from(netDefault("resonator"))
+_G.Peak = Net.from(netDefault("peak"))
+_G.Pinkpass = Net.from(netDefault("pinkpass"))
+_G.Panner = Net.from(netDefault("panner"))
+_G.Notch = Net.from(netDefault("notch"))
+_G.Moog = Net.from(netDefault("moog"))
+_G.Morph = Net.from(netDefault("morph"))
+_G.Lowpole = Net.from(netDefault("lowpole"))
+_G.Lowpass = Net.from(netDefault("lowpass"))
+_G.Lowshelf = Net.from(netDefault("lowshelf"))
+_G.Highpole = Net.from(netDefault("highpole"))
+_G.Highpass = Net.from(netDefault("highpass"))
+_G.Highshelf = Net.from(netDefault("highshelf"))
+_G.Butterpass = Net.from(netDefault("butterpass"))
+_G.Bell = Net.from(netDefault("bell"))
+_G.Bandpass = Net.from(netDefault("bandpass"))
+_G.Bandrez = Net.from(netDefault("bandrez"))
+_G.Allpass = Net.from(netDefault("allpass"))

@@ -1,6 +1,7 @@
 
 ### BEFORE RC/0.1.0 is merged
-- Add DSP filters & effects
+- Add DSP subtract metamethod
+- Add a DSP 'envelope' utility, which contains methods for creating custom fundsp envelopes based off templates.
 
 - Document all internal lua commands
 - Create template Luau file
