@@ -15,3 +15,5 @@ can play them. They can be created easily with the
 - Directory that holds luau files that are intended to be used as 
 utilities for the user program
 
+`samples/`
+- Directory that holds samples for the project

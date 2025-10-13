@@ -13,9 +13,9 @@ little effort. In order to succeed at both goals, OCTMM provides:
 - Low-level methods for creating new synthesizers through
 digital signal processing functions.
 
-- Methods for loading, slicing, and using sampled audio
+- Methods for loading and using sampled audio
+
+- Utility functions for sequencing sound playback
 
 - Utility functions for common note patterns 
 (e.g. chords, major/minor progressions)
-
-- Utility functions for sequencing sound playback
