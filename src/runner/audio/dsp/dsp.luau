@@ -124,6 +124,17 @@ local function netEffect(effect_type, ...)
 	end
 end
 
+local function netSub(id1: Number, id2: Number)
+	local ret = _audio_command_handler("dsp;net_sub;"..tostring(id1)..";"..tostring(id2))
+
+	if ret == "nil" then
+		print("Net sub error")
+		return nil
+	else
+		return tonumber(ret)
+	end
+end
+
 local function netProduct(id1: Number, id2: Number)
 	local ret = _audio_command_handler("dsp;net_product;"..tostring(id1)..";"..tostring(id2))
 
@@ -204,8 +215,16 @@ Net._mt = {}
 -- 		_net_id: Number
 
 -- Metamethods
+function Net._mt.__unm(a)
+	return Net.from(netSub(getNetId(Zero), getNetId(a)))
+end
+
 function Net._mt.__add(a, b)
 	return Net.from(netBus(getNetId(a), getNetId(b)))
+end
+
+function Net._mt.__sub(a, b)
+	return Net.from(netSub(getNetId(a), getNetId(b)))
 end
 
 function Net._mt.__mul(a, b)
@@ -285,7 +304,9 @@ Shared._mt = {}
 -- 		_value: Number
 
 -- Metamethods
+Shared._mt.__unm = Net._mt.__unm
 Shared._mt.__add = Net._mt.__add
+Shared._mt.__sub = Net._mt.__sub
 Shared._mt.__mul = Net._mt.__mul
 Shared._mt.__idiv = Net._mt.__idiv
 
@@ -324,7 +345,9 @@ Sample._mt = {}
 -- 		_net_id: Number
 -- 		_name: Sample Name
 -- 		_duration: Number, sample length in time
+Sample._mt.__unm = Net._mt.__unm
 Sample._mt.__add = Net._mt.__add
+Sample._mt.__sub= Net._mt.__sub
 Sample._mt.__mul = Net._mt.__mul
 Sample._mt.__idiv = Net._mt.__idiv
 Sample._mt.__concat = Net._mt.__concat
@@ -437,6 +460,8 @@ function Clip(min, max)
 end
 
 -- Setup Defaults --
+_G.Zero = Constant.new(0)
+
 _G.Hammond = Net.from(netDefault("hammond"))
 _G.Organ = Net.from(netDefault("organ"))
 _G.Saw = Net.from(netDefault("saw"))

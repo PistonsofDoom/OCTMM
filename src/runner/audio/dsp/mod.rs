@@ -389,6 +389,27 @@ impl DspModule {
         Some(self.net_from(&new_network))
     }
 
+    pub fn net_sub(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
+        if !self.net_exists(target_a) || !self.net_exists(target_b) {
+            return None;
+        }
+
+        let net_a = self.nets[target_a].clone();
+        let net_b = self.nets[target_b].clone();
+
+        if !Net::can_binary(&net_a, &net_b) {
+            println!(
+                "Can't subtract! Net A has {} outputs, Net B has {} outputs",
+                net_a.outputs(),
+                net_b.outputs()
+            );
+            return None;
+        }
+
+        let new_network = Net::binary(net_a, net_b, FrameSub::new());
+        return Some(self.net_from(&new_network));
+    }
+
     pub fn net_pipe(&mut self, target_a: usize, target_b: usize) -> Option<usize> {
         if !self.net_exists(target_a) || !self.net_exists(target_b) {
             return None;
@@ -399,7 +420,7 @@ impl DspModule {
 
         if !Net::can_pipe(&net_a, &net_b) {
             println!(
-                "Can't pipe! Net A has {} outputs, Net B has {}",
+                "Can't pipe! Net A has {} outputs, Net B has {} inputs",
                 net_a.outputs(),
                 net_b.inputs()
             );
@@ -717,6 +738,26 @@ impl CommandModule for DspModule {
                     .expect("net_bus, string conversion");
 
                 let ret = self.net_bus(arg_id1, arg_id2);
+
+                if ret.is_none() {
+                    return "nil".to_string();
+                }
+
+                return ret.unwrap().to_string();
+            }
+            "net_sub" => {
+                let arg_id1 = arg_vec
+                    .get(1)
+                    .expect("net_sub, id not found")
+                    .parse::<usize>()
+                    .expect("net_sub, string conversion");
+                let arg_id2 = arg_vec
+                    .get(2)
+                    .expect("net_sub, id not found")
+                    .parse::<usize>()
+                    .expect("net_sub, string conversion");
+
+                let ret = self.net_sub(arg_id1, arg_id2);
 
                 if ret.is_none() {
                     return "nil".to_string();
