@@ -22,6 +22,7 @@
 
 ### Examples
 
+<!-- TODO: CONFIRM THE EXAMPLES WORK -->
 #### Single input 
 
 ```lua
@@ -37,7 +38,7 @@ Play(sine_net)
 local pulse_duty = Constant.new(0.5)
 local pulse_freq = Constant.new(440)
 
-local pulse = (pulse_freq // pulse_duty) .. Pulse
+local pulse_net = (pulse_freq // pulse_duty) .. Pulse
 
 Play(pulse)
 ```
