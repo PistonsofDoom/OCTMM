@@ -1,6 +1,8 @@
 
 ### BEFORE RC/0.1.0 is merged
 - Document all internal lua commands
+- Fix Chrous function, should provide a "seed" variable (defaulted to 0), along with the separation/variation being based in beats, not seconds
+- Fix Clip 'max' default being -1
 - Create template Luau file
   - Update test_project_load to confirm template luau file is created
 - Create example project
