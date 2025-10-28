@@ -28,7 +28,7 @@ local many_piped_network = basic_piped_network .. Saw .. Triangle
 
 ### Arithmetic
 
-There are 3 ways to combine networks, Addition (+), Subtraction (-), and Multiplication (\*).
+There are 3 ways to combine networks, **Addition (+)**, **Subtraction (-)**, and **Multiplication (\*)**.
 
 ```lua
 local freq = Constant.new(440.0)
@@ -41,11 +41,28 @@ local multiplying_networks = adding_networks * subtracting_networks
 
 ### Stacking
 
+**Stacking** is an operand used to "stack" networks on top of each other. The operand for stacking is ``NetworkA // NetworkB``, where Network A is the lower network, and Network B is the upper network.
 
+There are two primary use cases for stacking networks.
+1. Controlling Networks with multiple inputs
+    - Networks with multiple inputs, such as the [Pulse](../references/generators.md), require multiple inputs to determine not only frequency, but pulse width as well.
 
-<!--
-How to stack, why stacking is needed for certain things
--->
+2. Separating Left and Right audio channel
+    - Internally, all played networks are output into a stereo audio stream, and all mono networks are converted to stereo automatically. Therefore, you can stack two networks together to create a unique left / right channel sound, assuming both networks only have 1 output.
+
+```lua
+-- Example of using Pulse generator
+local frequency = Constant.new(440.0)
+local duty_cycle = Constant.new(5.0) .. Sine -- Oscillate duty cycle
+
+local pulse_net = (frequency // duty_cycle) .. Pulse
+
+-- Using two networks for unique stereo sound
+local left_channel = frequency .. Sine
+local right_channel = frequency .. Saw
+
+local stereo_net = left_channel // right_channel
+```
 
 ### Playing Networks
 
