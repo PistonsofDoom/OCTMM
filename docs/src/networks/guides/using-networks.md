@@ -16,7 +16,7 @@ In order to make networks, several default [waveforms](../references/generators.
 
 ### Piping
 
-**Piping** is used to take a output of one network (e.g. a [constant](../guides/using-shared.md)), and "pipe" it into the input of another, like a Sine generator.
+**Piping** is used to take a output of one network (e.g. a [constant](../guides/using-shared.md)), and "pipe" it into the input of another, like a Sine generator. The operand used to pipe is ``NetworkA .. NetworkB``, where the outputs of Network A are fed into the inputs of Network B.
 
 ```lua
 -- Piping a constant frequency into a generator
@@ -28,15 +28,14 @@ local many_piped_network = basic_piped_network .. Saw .. Triangle
 
 ### Arithmetic
 
-There are 3 ways to combine networks, **Addition (+)**, **Subtraction (-)**, and **Multiplication (\*)**.
+There are 3 ways to combine networks, **Addition (+)**, **Subtraction (-)**, and **Multiplication (\*)**. All of these operands behave as it would in any other programming language. There is no division operand.
 
 ```lua
 local freq = Constant.new(440.0)
 
-local adding_networks = (freq .. Sine) + (freq .. Saw)
-local subtracting_networks = (freq .. Saw) - (freq .. Square)
-
-local multiplying_networks = adding_networks * subtracting_networks
+local added_network = (freq .. Sine) + (freq .. Saw)
+local subtracted_network = (freq .. Saw) - (freq .. Square)
+local multiplied_network = adding_networks * subtracting_networks
 ```
 
 ### Stacking
@@ -45,7 +44,7 @@ local multiplying_networks = adding_networks * subtracting_networks
 
 There are two primary use cases for stacking networks.
 1. Controlling Networks with multiple inputs
-    - Networks with multiple inputs, such as the [Pulse](../references/generators.md), require multiple inputs to determine not only frequency, but pulse width as well.
+    - Networks with multiple inputs, such as the [Pulse](../references/generators.md) generator, require multiple inputs to determine not only frequency, but pulse width as well.
 
 2. Separating Left and Right audio channel
     - Internally, all played networks are output into a stereo audio stream, and all mono networks are converted to stereo automatically. Therefore, you can stack two networks together to create a unique left / right channel sound, assuming both networks only have 1 output.
@@ -53,15 +52,15 @@ There are two primary use cases for stacking networks.
 ```lua
 -- Example of using Pulse generator
 local frequency = Constant.new(440.0)
-local duty_cycle = Constant.new(5.0) .. Sine -- Oscillate duty cycle
+local duty_cycle = Constant.new(5.0) .. Sine
 
-local pulse_net = (frequency // duty_cycle) .. Pulse
+local pulse_network = (frequency // duty_cycle) .. Pulse
 
 -- Using two networks for unique stereo sound
 local left_channel = frequency .. Sine
 local right_channel = frequency .. Saw
 
-local stereo_net = left_channel // right_channel
+local stereo_network = left_channel // right_channel
 ```
 
 ### Playing Networks
