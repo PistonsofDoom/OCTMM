@@ -16,30 +16,32 @@ In order to make networks, several default [waveforms](../references/generators.
 
 ### Piping
 
-**Piping** is used to take a output of one network, e.g. a [constant](../references/using-shared.md), and "pipe" it into the input of another, like a Sine generator.
+**Piping** is used to take a output of one network (e.g. a [constant](../guides/using-shared.md)), and "pipe" it into the input of another, like a Sine generator.
 
 ```lua
--- Very basic piped network
+-- Piping a constant frequency into a generator
 local basic_piped_network = Constant.new(440.0) .. Sine
 
--- You can take a pre-existing network and pipe it into more generators
+-- Piping a pre-existing network through multiple generators
 local many_piped_network = basic_piped_network .. Saw .. Triangle
-
--- Or even itself
-local double_piped_network = basic_piped_network .. basic_piped_network
 ```
 
 ### Arithmetic
 
-<!--
-Should cover:
-- Addition
-- Subtraction
-- Multiplication
-- Tips about Constants, and things to watch out for.
--->
+There are 3 ways to combine networks, Addition (+), Subtraction (-), and Multiplication (\*).
+
+```lua
+local freq = Constant.new(440.0)
+
+local adding_networks = (freq .. Sine) + (freq .. Saw)
+local subtracting_networks = (freq .. Saw) - (freq .. Square)
+
+local multiplying_networks = adding_networks * subtracting_networks
+```
 
 ### Stacking
+
+
 
 <!--
 How to stack, why stacking is needed for certain things
