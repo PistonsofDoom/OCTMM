@@ -14,7 +14,6 @@
     - [Using Networks](./networks/guides/using-networks.md)
     - [Using Constant and Shared](./networks/guides/using-shared.md)
     - [Using Samples](./networks/guides/using-samples.md)
-    - [Network Operators](./networks/guides/network-operators.md)
 - [Audio Utilities](./audio.md)
     - [Playback](./audio/references/playback.md)
     - [Notes](./audio/references/notes.md)
