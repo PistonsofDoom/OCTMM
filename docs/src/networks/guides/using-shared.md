@@ -55,7 +55,7 @@ my_shared_amp(#my_shared_amp * 2.0)
 -- (220.0 .. Sine) * 1.0
 ```
 
-It is important to note that shared networks should be created separately from where they are used, as the ability to `set` and `read` the shared is lost if created inline.
+It is important to note that shared networks should be created separately from where they are used, as the ability to `set` and `read` the shared is lost when used with a network.
 
 ```lua
 -- INVALID SHARED USAGE
