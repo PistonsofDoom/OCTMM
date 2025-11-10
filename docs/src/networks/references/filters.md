@@ -28,11 +28,18 @@
 #### Lowpass
 
 ```lua
--- TODO
+local organ_network = Constant.new(440.0) .. Organ 
+local cutoff_frequency = Constant.new(330.0)
+local q_factor = Constant.new(1.0)
+
+local lowpassed_network = (organ_network // cutoff_frequency // q_factor) .. Lowpass
 ```
 
 #### Panner
 
 ```lua
--- TODO
+local organ_network = Constant.new(440.0) .. Organ 
+local pan_sine_network = Constant.new(5.0) .. Sine
+
+local panning_network = (organ_network // pan_sine_network) .. Panner
 ```
