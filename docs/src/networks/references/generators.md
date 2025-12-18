@@ -40,7 +40,7 @@ local pulse_freq = Constant.new(440)
 
 local pulse_net = (pulse_freq // pulse_duty) .. Pulse
 
-Play(pulse)
+Play(pulse_net)
 ```
 
 #### No input
