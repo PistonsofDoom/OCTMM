@@ -62,7 +62,7 @@ local function netFromSample(value: String, loop_point, channel)
 	if channel == nil or typeof(channel) ~= "number" then
 		channel = ""
 	else
-		channel = ";"..tostring(channel)
+		channel = ";"..tostring(channel - 1)
 	end
 
 	-- Return of net_from_sample is always consistently either "nil", or
@@ -366,7 +366,7 @@ end
 function Sample.new(name: String, loop_point, channel)
 	local new_sample = {}
 
-	local sample_data = netFromSample(name, loop_point, channel - 1)
+	local sample_data = netFromSample(name, loop_point, channel)
 	if sample_data == nil then
 		error("Cannot find or create sample.. "..name)
 	end
