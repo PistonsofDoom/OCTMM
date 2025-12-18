@@ -51,6 +51,10 @@ print(#my_shared_amp)
 my_shared_freq(220.0)
 my_shared_amp(#my_shared_amp * 2.0)
 
+-- Print new values
+print(#my_shared_freq)
+print(#my_shared_amp)
+
 -- sine_network would be equal to
 -- (220.0 .. Sine) * 1.0
 ```
