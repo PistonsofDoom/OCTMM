@@ -22,7 +22,6 @@
 
 ### Examples
 
-<!-- TODO: CONFIRM THE EXAMPLES WORK -->
 #### Single input 
 
 ```lua
