@@ -37,7 +37,7 @@ local clap01_network = Constant.new(1.5) .. clap01_sample
 
 -- Name, no loop, channel
 local riser_sample = Sample.new("riser", nil, 2)
-local riser_network = Constant.new(0.75) .. riser_network .. Sine 
+local riser_network = Constant.new(0.75) .. riser_sample
 
 -- You can also feed samples into generators and effects!
-local cool_network = ((riser_network .. Sine) // Constant.new(7000.0)) .. Lowpole
+local cool_network = (((riser_network * 440.0) .. Saw) // Constant.new(7000.0)) .. Lowpole
