@@ -35,7 +35,7 @@ local freq = Constant.new(440.0)
 
 local added_network = (freq .. Sine) + (freq .. Saw)
 local subtracted_network = (freq .. Saw) - (freq .. Square)
-local multiplied_network = adding_networks * subtracting_networks
+local multiplied_network = added_network * subtracted_network
 ```
 
 ### Stacking
